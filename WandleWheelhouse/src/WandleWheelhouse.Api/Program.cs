@@ -121,16 +121,49 @@ builder.Services.AddCors(options =>
         policyBuilder =>
         {
             // IMPORTANT: Be specific in production!
-            string[] allowedOrigins = isDevelopment
-                ? new[] { "http://localhost:5173", "http://127.0.0.1:5173" } // Vite default dev server
-                : new[] { "https://wandlewheelhouse.org" }; // Your production frontend URL
+            List<string> allowedOrigins = new List<string>();
+            if (isDevelopment)
+            {
+                // Add Vite default dev server AND Swagger UI's origin for dev
+                allowedOrigins.Add("http://localhost:5173"); // Vite default
+                allowedOrigins.Add("http://127.0.0.1:5173"); // Vite alternative
+                allowedOrigins.Add($"https://localhost:{builder.Configuration.GetValue<int>("HttpsPort", 7136)}"); // Get port dynamically or hardcode
+                allowedOrigins.Add($"http://localhost:{builder.Configuration.GetValue<int>("HttpPort", 5041)}");  // Allow HTTP too if needed
+            }
+            else
+            {
+                // Production frontend URL(s)
+                allowedOrigins.Add("https://wandlewheelhouse.org");
+            }
+// Optional: To get ports dynamically, add them to appsettings.Development.json
+// "HttpsPort": 7136,
+// "HttpPort": 5041,
+// Ensure your launchSettings.json ports match! Your HTTPS port is 7136.
 
-            policyBuilder.WithOrigins(allowedOrigins) // Allow specific frontend origins
-                         .AllowAnyHeader() // Allow common headers
-                         .AllowAnyMethod() // Allow common HTTP methods (GET, POST, PUT, DELETE, OPTIONS)
-                         .AllowCredentials(); // Crucial for cookies/auth headers
+            policyBuilder.WithOrigins(allowedOrigins.ToArray()) // Use the list
+                         .AllowAnyHeader()
+                         .AllowAnyMethod()
+                         .AllowCredentials();
         });
 });
+
+
+// builder.Services.AddCors(options =>
+// {
+//     options.AddPolicy("AllowWebApp", // Name this policy
+//         policyBuilder =>
+//         {
+//             // IMPORTANT: Be specific in production!
+//             string[] allowedOrigins = isDevelopment
+//                 ? new[] { "http://localhost:5173", "http://127.0.0.1:5173" } // Vite default dev server
+//                 : new[] { "https://wandlewheelhouse.org" }; // Your production frontend URL
+
+//             policyBuilder.WithOrigins(allowedOrigins) // Allow specific frontend origins
+//                          .AllowAnyHeader() // Allow common headers
+//                          .AllowAnyMethod() // Allow common HTTP methods (GET, POST, PUT, DELETE, OPTIONS)
+//                          .AllowCredentials(); // Crucial for cookies/auth headers
+//         });
+// });
 
 // Add Controllers
 builder.Services.AddControllers();
