@@ -6,6 +6,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using WandleWheelhouse.Api.Data;
 using WandleWheelhouse.Api.Models;
+using WandleWheelhouse.Api.Services;
 using WandleWheelhouse.Api.UnitOfWork; // Your User model namespace
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,7 +35,22 @@ else
                 errorNumbersToAdd: null)
             ));
 }
+// In Program.cs, where services are configured:
 
+
+// ... other services ...
+
+// Register Email Sender (Use Dummy for Dev)
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddSingleton<IEmailSender, DummyEmailSender>(); // Singleton or Scoped? Depends. Singleton ok for dummy.
+}
+else
+{
+    // builder.Services.AddSingleton<IEmailSender, RealEmailSender>(); // Register real one for Prod
+    // TODO: Configure real email service (e.g., SendGrid) and register its implementation
+     builder.Services.AddSingleton<IEmailSender, DummyEmailSender>(); // Fallback to dummy for now
+}
 // Identity Configuration
 builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
@@ -177,11 +193,18 @@ builder.Services.AddSwaggerGen(options =>
     // Add JWT Authentication support in Swagger UI
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        In = ParameterLocation.Header,
-        Description = "Please enter JWT with Bearer into field (e.g., 'Bearer <token>')",
+        Description = "JWT Authorization header using the Bearer scheme.",
         Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey, // Use ApiKey for Bearer input field
-        Scheme = "Bearer"
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+
+        // In = ParameterLocation.Header,
+        // Description = "Please enter JWT with Bearer into field (e.g., 'Bearer <token>')",
+        // Name = "Authorization",
+        // Type = SecuritySchemeType.ApiKey, // Use ApiKey for Bearer input field
+        // Scheme = "Bearer"
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement {
@@ -212,15 +235,53 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 var app = builder.Build();
 
+// --- Development Only: Reset SQLite Database on Startup ---
+if (app.Environment.IsDevelopment())
+{
+    // Create a scope to resolve services like DbContext
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        var logger = services.GetRequiredService<ILogger<Program>>(); // Get a logger
+        try
+        {
+            var context = services.GetRequiredService<ApplicationDbContext>();
+
+            logger.LogInformation("Development: Deleting existing development database...");
+            // Delete the database file if it exists
+            await context.Database.EnsureDeletedAsync();
+            logger.LogInformation("Development: Database deleted successfully.");
+
+            // Recreate the database using migrations (recommended)
+            logger.LogInformation("Development: Applying migrations to create database...");
+            await context.Database.MigrateAsync();
+            logger.LogInformation("Development: Database created and migrations applied.");
+
+            // Optional: Add seeding logic here if you want fresh seed data every time
+            // logger.LogInformation("Development: Seeding data...");
+            // await SeedData.Initialize(services); // Example call if you have a SeedData class
+            // logger.LogInformation("Development: Data seeding complete.");
+
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred during development database reset.");
+            // Decide if you want the app to fail here or just log the error
+            // throw; // Uncomment to stop the app if reset fails
+        }
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Wandle Wheelhouse API V1");
         // Optional: Configure Swagger UI for better JWT handling if needed
-        // c.EnablePersistAuthorization(); // Persist auth token in browser session
+        c.EnablePersistAuthorization(); // Persist auth token in browser session
     });
     app.UseDeveloperExceptionPage(); // More detailed errors in dev
 }

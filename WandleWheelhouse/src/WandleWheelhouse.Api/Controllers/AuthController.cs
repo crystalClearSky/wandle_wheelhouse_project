@@ -9,7 +9,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using WandleWheelhouse.Api.DTOs.Auth;
-using WandleWheelhouse.Api.Models; // Your User model
+using WandleWheelhouse.Api.Models;
+using Microsoft.EntityFrameworkCore; // Your User model
 
 namespace WandleWheelhouse.Api.Controllers;
 
@@ -107,7 +108,7 @@ public class AuthController : BaseApiController // Inherit from BaseApiControlle
         _logger.LogInformation("Login attempt for {Email}", loginDto.Email);
 
         // 1. Find the user by email
-        var user = await _userManager.FindByEmailAsync(loginDto.Email);
+        var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email && !u.IsDeleted);
         if (user == null)
         {
              _logger.LogWarning("Login failed: User {Email} not found.", loginDto.Email);

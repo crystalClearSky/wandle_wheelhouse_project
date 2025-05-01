@@ -9,6 +9,7 @@ using WandleWheelhouse.Api.Repositories.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace WandleWheelhouse.Api.Repositories;
 
@@ -45,16 +46,16 @@ public class BlogArticleRepository : GenericRepository<BlogArticle>, IBlogArticl
             .FirstOrDefaultAsync();
     }
 
-     public async Task<IEnumerable<BlogArticle>> GetArticlesByAuthorAsync(string authorId)
-     {
-         // Find all articles (published or not) by a specific author's ID
-         // Include Author details (though might be redundant if filtering by AuthorId)
-         return await _dbSet
-             .Include(a => a.Author)
-             .Where(a => a.AuthorId == authorId)
-             .OrderByDescending(a => a.PublicationDate)
-             .ToListAsync();
-     }
+    public async Task<IEnumerable<BlogArticle>> GetArticlesByAuthorAsync(string authorId)
+    {
+        // Find all articles (published or not) by a specific author's ID
+        // Include Author details (though might be redundant if filtering by AuthorId)
+        return await _dbSet
+            .Include(a => a.Author)
+            .Where(a => a.AuthorId == authorId)
+            .OrderByDescending(a => a.PublicationDate)
+            .ToListAsync();
+    }
 
     // Override GetByIdAsync to include Author details by default when getting a single article
     public override async Task<BlogArticle?> GetByIdAsync(object id)
@@ -73,5 +74,10 @@ public class BlogArticleRepository : GenericRepository<BlogArticle>, IBlogArticl
     {
         return await _dbSet.CountAsync(a => a.IsPublished);
     }
+    public async Task<bool> ExistsAsync(Expression<Func<BlogArticle, bool>>predicate)
+    {
+        return await _dbSet.AnyAsync(predicate);
+    }
+
 }
 #nullable disable

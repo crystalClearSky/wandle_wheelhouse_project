@@ -30,5 +30,8 @@ public class User : IdentityUser
     // Navigation Properties (Relationships)
     public virtual ICollection<Donation>? Donations { get; set; }
     public virtual ICollection<Subscription>? Subscriptions { get; set; }
+    // Add these for Soft Delete
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAt { get; set; }
 }
 #nullable disable // Disable nullable checking if needed elsewhere

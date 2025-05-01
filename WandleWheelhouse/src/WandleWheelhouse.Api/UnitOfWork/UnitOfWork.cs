@@ -30,7 +30,10 @@ public class UnitOfWork : IUnitOfWork
     public ISubscriptionRepository Subscriptions => _subscriptions ??= new SubscriptionRepository(_context);
     public INewsletterSubscriptionRepository NewsletterSubscriptions => _newsletterSubscriptions ??= new NewsletterSubscriptionRepository(_context);
     public IBlogArticleRepository BlogArticles => _blogArticles ??= new BlogArticleRepository(_context);
+    // Add:
+    public ApplicationDbContext Context => _context;
 
+    
     public async Task<int> CompleteAsync()
     {
         // You could add logic here before saving (e.g., updating timestamps)
