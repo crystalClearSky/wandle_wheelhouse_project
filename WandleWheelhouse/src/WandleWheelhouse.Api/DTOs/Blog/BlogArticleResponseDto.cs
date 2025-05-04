@@ -23,5 +23,6 @@ public class BlogArticleResponseDto
     // Author details
     public string AuthorId { get; set; } = string.Empty;
     public string? AuthorFullName { get; set; } // e.g., "John Doe"
+    public string? AuthorAvatarUrl { get; set; }
 }
 #nullable disable

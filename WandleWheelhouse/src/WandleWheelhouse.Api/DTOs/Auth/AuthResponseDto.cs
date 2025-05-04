@@ -23,5 +23,6 @@ public class UserInfoDto
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public IList<string> Roles { get; set; } = new List<string>();
+    public string? AvatarUrl { get; set; } // <-- Add this
 }
 #nullable disable

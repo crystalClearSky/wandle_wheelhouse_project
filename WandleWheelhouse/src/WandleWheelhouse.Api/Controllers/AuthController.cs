@@ -196,7 +196,8 @@ public class AuthController : BaseApiController // Inherit from BaseApiControlle
             Email = user.Email!,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            Roles = roles
+            Roles = roles,
+            AvatarUrl = user.AvatarUrl // <-- Populate this
         };
 
         return (jwtToken, token.ValidTo, userInfo);

@@ -33,5 +33,8 @@ public class User : IdentityUser
     // Add these for Soft Delete
     public bool IsDeleted { get; set; } = false;
     public DateTime? DeletedAt { get; set; }
+    // --- Add Avatar URL field ---
+    [MaxLength(2048)] // Max URL length
+    public string? AvatarUrl { get; set; }
 }
 #nullable disable // Disable nullable checking if needed elsewhere

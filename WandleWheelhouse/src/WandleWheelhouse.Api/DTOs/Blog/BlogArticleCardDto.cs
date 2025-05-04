@@ -18,5 +18,8 @@ public class BlogArticleCardDto
 
     // Author details
     public string? AuthorFullName { get; set; }
+    public string? AuthorAvatarUrl { get; set; }
+
+    public bool IsPublished { get; set; }
 }
 #nullable disable

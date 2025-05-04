@@ -1,3 +1,6 @@
+// Location: src/WandleWheelhouse.Api/Program.cs
+
+// --- Using Statements ---
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -7,89 +10,80 @@ using System.Text;
 using WandleWheelhouse.Api.Data;
 using WandleWheelhouse.Api.Models;
 using WandleWheelhouse.Api.Services;
-using WandleWheelhouse.Api.UnitOfWork; // Your User model namespace
+using WandleWheelhouse.Api.UnitOfWork;
+using System.IO; // For Path
+using System.Reflection; // For Assembly
+using WandleWheelhouse.Api.SwaggerFilters; // <-- Add using for your filter's namespace
+using Microsoft.Extensions.FileProviders; // For PhysicalFileProvider
+using Microsoft.AspNetCore.Http; // For StatusCodes
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- 1. Configure Services ---
 
-// Database Context Configuration (Handles Development vs. Production)
+// Database Context Configuration
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var isDevelopment = builder.Environment.IsDevelopment();
 
 if (isDevelopment)
 {
-    // Use SQLite in Development
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseSqlite(connectionString));
 }
 else
 {
-    // Use MySQL in Production
-    // Ensure 'connectionString' is properly set for MySQL in appsettings.Production.json or env vars
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
-            mySqlOptions => mySqlOptions.EnableRetryOnFailure( // Optional: resilience
+            mySqlOptions => mySqlOptions.EnableRetryOnFailure(
                 maxRetryCount: 5,
                 maxRetryDelay: TimeSpan.FromSeconds(30),
                 errorNumbersToAdd: null)
             ));
 }
-// In Program.cs, where services are configured:
 
-
-// ... other services ...
-
-// Register Email Sender (Use Dummy for Dev)
+// Email Sender Registration
 if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddSingleton<IEmailSender, DummyEmailSender>(); // Singleton or Scoped? Depends. Singleton ok for dummy.
+    builder.Services.AddSingleton<IEmailSender, DummyEmailSender>();
 }
 else
 {
-    // builder.Services.AddSingleton<IEmailSender, RealEmailSender>(); // Register real one for Prod
-    // TODO: Configure real email service (e.g., SendGrid) and register its implementation
-     builder.Services.AddSingleton<IEmailSender, DummyEmailSender>(); // Fallback to dummy for now
+    builder.Services.AddSingleton<IEmailSender, DummyEmailSender>(); // TODO: Replace with real sender for production
 }
+
 // Identity Configuration
 builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
-    // Password complexity requirements
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
-    options.Password.RequireNonAlphanumeric = true; // Requires symbols
-    options.Password.RequiredUniqueChars = 1; // Number of unique chars
-
-    // Lockout settings (optional but recommended)
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredUniqueChars = 1;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
-
-    // User settings
     options.User.RequireUniqueEmail = true;
-    options.SignIn.RequireConfirmedAccount = false; // Set to true if email confirmation is needed
+    options.SignIn.RequireConfirmedAccount = false;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders(); // Required for password reset, email confirmation tokens
-
+.AddDefaultTokenProviders();
 
 // JWT Authentication Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secretKey = Encoding.ASCII.GetBytes(jwtSettings["Key"]
-    ?? throw new InvalidOperationException("JWT Key is missing in configuration")); // Ensure key exists
+    ?? throw new InvalidOperationException("JWT Key is missing in configuration"));
 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; // Specify default scheme
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
-    options.SaveToken = true; // Save token to HttpContext
-    options.RequireHttpsMetadata = !isDevelopment; // Require HTTPS in production
+    options.SaveToken = true;
+    options.RequireHttpsMetadata = !isDevelopment;
     options.TokenValidationParameters = new TokenValidationParameters()
     {
         ValidateIssuer = true,
@@ -99,89 +93,45 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(secretKey),
-        ClockSkew = TimeSpan.Zero // Optional: remove clock skew tolerance for exact expiry
+        ClockSkew = TimeSpan.Zero
     };
-
-    // --- Handling JWT in Cookies (If needed alongside Bearer for session-like behavior) ---
-    // This allows the browser to automatically send the token in a cookie,
-    // BUT it requires careful CSRF protection on the frontend for state-changing requests.
-    // Standard SPAs often prefer sending the Bearer token manually in Authorization header via JS.
-    // Choose ONE primary method or understand the security implications of using both.
-    // For simplicity and common SPA patterns, we'll focus on Bearer tokens sent via JS.
-    // If cookie-based session is strictly required:
-    // options.Events = new JwtBearerEvents
-    // {
-    //     OnMessageReceived = context =>
-    //     {
-    //         context.Token = context.Request.Cookies["X-Access-Token"]; // Read token from a cookie
-    //         return Task.CompletedTask;
-    //     }
-    // };
-    // Login endpoint would need to SET this cookie (HttpOnly, Secure, SameSite=Strict).
 });
-
 
 // Authorization (Role Policies)
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequireAdministratorRole", policy => policy.RequireRole("Administrator"));
-    options.AddPolicy("RequireEditorRole", policy => policy.RequireRole("Administrator", "Editor")); // Admins are also Editors
-    options.AddPolicy("RequireMemberRole", policy => policy.RequireRole("Administrator", "Editor", "Member")); // All logged-in are Members
+    options.AddPolicy("RequireEditorRole", policy => policy.RequireRole("Administrator", "Editor"));
+    options.AddPolicy("RequireMemberRole", policy => policy.RequireRole("Administrator", "Editor", "Member"));
 });
-
 
 // CORS Configuration (Global)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowWebApp", // Name this policy
+    options.AddPolicy("AllowWebApp",
         policyBuilder =>
         {
-            // IMPORTANT: Be specific in production!
             List<string> allowedOrigins = new List<string>();
             if (isDevelopment)
             {
-                // Add Vite default dev server AND Swagger UI's origin for dev
-                allowedOrigins.Add("http://localhost:5173"); // Vite default
-                allowedOrigins.Add("http://127.0.0.1:5173"); // Vite alternative
-                allowedOrigins.Add($"https://localhost:{builder.Configuration.GetValue<int>("HttpsPort", 7136)}"); // Get port dynamically or hardcode
-                allowedOrigins.Add($"http://localhost:{builder.Configuration.GetValue<int>("HttpPort", 5041)}");  // Allow HTTP too if needed
+                allowedOrigins.Add("http://localhost:5173");
+                allowedOrigins.Add("http://127.0.0.1:5173");
+                allowedOrigins.Add($"https://localhost:{builder.Configuration.GetValue<int>("HttpsPort", 7136)}");
+                allowedOrigins.Add($"http://localhost:{builder.Configuration.GetValue<int>("HttpPort", 5041)}");
             }
             else
             {
-                // Production frontend URL(s)
-                allowedOrigins.Add("https://wandlewheelhouse.org");
+                allowedOrigins.Add("https://wandlewheelhouse.org"); // Replace with actual prod URL
             }
-// Optional: To get ports dynamically, add them to appsettings.Development.json
-// "HttpsPort": 7136,
-// "HttpPort": 5041,
-// Ensure your launchSettings.json ports match! Your HTTPS port is 7136.
 
-            policyBuilder.WithOrigins(allowedOrigins.ToArray()) // Use the list
+            policyBuilder.WithOrigins(allowedOrigins.ToArray())
                          .AllowAnyHeader()
                          .AllowAnyMethod()
                          .AllowCredentials();
         });
 });
 
-
-// builder.Services.AddCors(options =>
-// {
-//     options.AddPolicy("AllowWebApp", // Name this policy
-//         policyBuilder =>
-//         {
-//             // IMPORTANT: Be specific in production!
-//             string[] allowedOrigins = isDevelopment
-//                 ? new[] { "http://localhost:5173", "http://127.0.0.1:5173" } // Vite default dev server
-//                 : new[] { "https://wandlewheelhouse.org" }; // Your production frontend URL
-
-//             policyBuilder.WithOrigins(allowedOrigins) // Allow specific frontend origins
-//                          .AllowAnyHeader() // Allow common headers
-//                          .AllowAnyMethod() // Allow common HTTP methods (GET, POST, PUT, DELETE, OPTIONS)
-//                          .AllowCredentials(); // Crucial for cookies/auth headers
-//         });
-// });
-
-// Add Controllers
+// Controller Services
 builder.Services.AddControllers();
 
 // Swagger/OpenAPI Configuration
@@ -190,23 +140,18 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "Wandle Wheelhouse API", Version = "v1" });
 
-    // Add JWT Authentication support in Swagger UI
+    // Security Definition (Bearer Auth)
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme.",
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT"
-
-        // In = ParameterLocation.Header,
-        // Description = "Please enter JWT with Bearer into field (e.g., 'Bearer <token>')",
-        // Name = "Authorization",
-        // Type = SecuritySchemeType.ApiKey, // Use ApiKey for Bearer input field
-        // Scheme = "Bearer"
     });
 
+    // Security Requirement
     options.AddSecurityRequirement(new OpenApiSecurityRequirement {
     {
         new OpenApiSecurityScheme
@@ -217,19 +162,36 @@ builder.Services.AddSwaggerGen(options =>
                 Id = "Bearer"
             }
         },
-        new string[] {} // No specific scopes needed here
+        new string[] {}
     }});
+
+    // Include XML Comments
+    try
+    {
+         var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+         var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+         if (File.Exists(xmlPath))
+         {
+             options.IncludeXmlComments(xmlPath);
+             Console.WriteLine($"Successfully included XML comments from: {xmlPath}");
+         } else {
+             Console.WriteLine($"XML comment file not found at: {xmlPath}");
+         }
+    }
+    catch(Exception ex)
+    {
+         Console.WriteLine($"Error including XML comments: {ex.Message}");
+    }
+
+    // --- Register the Custom Operation Filter for File Uploads ---
+    options.OperationFilter<FileUploadOperationFilter>(); // <-- ADD THIS LINE
+    // --- End Filter Registration ---
+
 });
 
-// Register custom services (Repository, UnitOfWork, EmailSender, Payment Processors etc. - will be added later)
+// Register custom application services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-// builder.Services.AddScoped<IDonationRepository, DonationRepository>();
-// builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
-// builder.Services.AddScoped<INewsletterSubscriptionRepository, NewsletterSubscriptionRepository>();
-// builder.Services.AddScoped<IBlogArticleRepository, BlogArticleRepository>();
-
-// builder.Services.AddScoped<IPaymentService, MockPaymentService>(); // Example
+// Add other services like IPaymentService etc. if/when created
 
 // --- 2. Configure HTTP Request Pipeline ---
 
@@ -238,91 +200,79 @@ var app = builder.Build();
 // --- Development Only: Reset SQLite Database on Startup ---
 if (app.Environment.IsDevelopment())
 {
-    // Create a scope to resolve services like DbContext
-    using (var scope = app.Services.CreateScope())
-    {
-        var services = scope.ServiceProvider;
-        var logger = services.GetRequiredService<ILogger<Program>>(); // Get a logger
-        try
-        {
-            var context = services.GetRequiredService<ApplicationDbContext>();
-
-            logger.LogInformation("Development: Deleting existing development database...");
-            // Delete the database file if it exists
-            await context.Database.EnsureDeletedAsync();
-            logger.LogInformation("Development: Database deleted successfully.");
-
-            // Recreate the database using migrations (recommended)
-            logger.LogInformation("Development: Applying migrations to create database...");
-            await context.Database.MigrateAsync();
-            logger.LogInformation("Development: Database created and migrations applied.");
-
-            // Optional: Add seeding logic here if you want fresh seed data every time
-            // logger.LogInformation("Development: Seeding data...");
-            // await SeedData.Initialize(services); // Example call if you have a SeedData class
-            // logger.LogInformation("Development: Data seeding complete.");
-
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "An error occurred during development database reset.");
-            // Decide if you want the app to fail here or just log the error
-            // throw; // Uncomment to stop the app if reset fails
-        }
-    }
+    // using (var scope = app.Services.CreateScope())
+    // {
+    //     var services = scope.ServiceProvider;
+    //     var logger = services.GetRequiredService<ILogger<Program>>();
+    //     try
+    //     {
+    //         var context = services.GetRequiredService<ApplicationDbContext>();
+    //         logger.LogInformation("Development: Deleting existing development database...");
+    //         await context.Database.EnsureDeletedAsync();
+    //         logger.LogInformation("Development: Database deleted successfully.");
+    //         logger.LogInformation("Development: Applying migrations to create database...");
+    //         await context.Database.MigrateAsync();
+    //         logger.LogInformation("Development: Database created and migrations applied.");
+    //         // Optional Seeding
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         logger.LogError(ex, "An error occurred during development database reset.");
+    //     }
+    // }
 }
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Wandle Wheelhouse API V1");
-        // Optional: Configure Swagger UI for better JWT handling if needed
-        c.EnablePersistAuthorization(); // Persist auth token in browser session
+        c.EnablePersistAuthorization(); // Optional: Persist auth token in browser session
     });
-    app.UseDeveloperExceptionPage(); // More detailed errors in dev
+    // Use Developer Exceptions Page AFTER Swagger setup for better Swagger error visibility
+    app.UseDeveloperExceptionPage();
 }
 else
 {
     app.UseExceptionHandler("/Error"); // Configure a proper error handling page/endpoint
-    app.UseHsts(); // Enforce HTTPS Strict Transport Security
+    app.UseHsts();
 }
 
-app.UseHttpsRedirection(); // Redirect HTTP to HTTPS
+app.UseHttpsRedirection();
 
-// IMPORTANT: Place UseCors BEFORE UseAuthentication and UseAuthorization
-app.UseCors("AllowWebApp"); // Apply the CORS policy
+// --- Static Files Configuration ---
+// Serve files from wwwroot (if it exists)
+app.UseStaticFiles();
 
-app.UseAuthentication(); // Enable authentication middleware
-app.UseAuthorization(); // Enable authorization middleware
+// Specifically configure serving files from the 'uploads' directory
+// Ensure 'uploads' folder exists inside wwwroot folder at the API project root
+var uploadsPath = Path.Combine(app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"), "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    try {
+         Directory.CreateDirectory(uploadsPath);
+         Console.WriteLine($"Created directory: {uploadsPath}");
+    } catch (Exception ex) {
+         Console.WriteLine($"Failed to create directory {uploadsPath}: {ex.Message}");
+    }
+}
 
-// Map controllers using attribute routing
-app.MapControllers();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath), // Use correct using: Microsoft.Extensions.FileProviders
+    RequestPath = "/uploads" // Access files via https://.../uploads/...
+});
+// --- End Static Files Configuration ---
 
-// --- 3. Apply Migrations & Seed Data (Optional: Can be done manually or via script) ---
-// This is a common pattern to auto-apply migrations on startup (esp. useful in containers)
-// BE CAREFUL with this in production clustered environments. Manual migration is often safer.
-// using (var scope = app.Services.CreateScope())
-// {
-//     var services = scope.ServiceProvider;
-//     try
-//     {
-//         var context = services.GetRequiredService<ApplicationDbContext>();
-//         context.Database.Migrate(); // Apply pending migrations
 
-//         // Optional: Seed initial data (Roles, Admin User) if not done in OnModelCreating
-//         // await SeedData.Initialize(services); // Create a SeedData class
-//     }
-//     catch (Exception ex)
-//     {
-//         var logger = services.GetRequiredService<ILogger<Program>>();
-//         logger.LogError(ex, "An error occurred migrating or seeding the DB.");
-//         // Decide if the application should fail to start
-//     }
-// }
+// IMPORTANT: Middleware Order Matters!
+app.UseCors("AllowWebApp"); // CORS before Auth
 
+app.UseAuthentication(); // Who are you?
+app.UseAuthorization(); // Are you allowed?
+
+app.MapControllers(); // Map controller routes AFTER Auth setup
 
 app.Run(); // Start the application
