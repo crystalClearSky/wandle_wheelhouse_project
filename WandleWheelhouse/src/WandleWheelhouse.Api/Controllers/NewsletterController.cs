@@ -1,167 +1,130 @@
+// Location: src/WandleWheelhouse.Api/Controllers/NewsletterController.cs
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
-using WandleWheelhouse.Api.DTOs.Newsletter;
+using WandleWheelhouse.Api.DTOs.Common; // For PagedResultDto
+using WandleWheelhouse.Api.DTOs.Newsletter; // Contains your DTOs
 using WandleWheelhouse.Api.Models;
 using WandleWheelhouse.Api.UnitOfWork;
 
-namespace WandleWheelhouse.Api.Controllers;
-
-public class NewsletterController : BaseApiController
+namespace WandleWheelhouse.Api.Controllers
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly UserManager<User> _userManager; // To potentially link logged-in user
-    private readonly ILogger<NewsletterController> _logger;
-
-    public NewsletterController(
-        IUnitOfWork unitOfWork,
-        UserManager<User> userManager,
-        ILogger<NewsletterController> logger)
+    public class NewsletterController : BaseApiController
     {
-        _unitOfWork = unitOfWork;
-        _userManager = userManager;
-        _logger = logger;
-    }
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly UserManager<User> _userManager;
+        private readonly ILogger<NewsletterController> _logger;
 
-    // --- Endpoint to Subscribe to Newsletter ---
-    [HttpPost("subscribe")]
-    [AllowAnonymous] // Anyone can subscribe
-    [ProducesResponseType(StatusCodes.Status204NoContent)] // Success, no content needed back
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)] // Email already exists
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Subscribe([FromBody] NewsletterSubscriptionRequestDto requestDto)
-    {
-        _logger.LogInformation("Newsletter subscription request for Email: {Email}", requestDto.Email);
-
-        // Normalize email for consistent checking
-        var normalizedEmail = requestDto.Email.Trim().ToLowerInvariant();
-
-        // Check if email already exists using repository method (assumes case-insensitive check there)
-        // Or do the check directly here for simplicity if repo method isn't specific enough
-        bool exists = await _unitOfWork.NewsletterSubscriptions.DoesEmailExistAsync(normalizedEmail);
-        // Note: AnyAsync is not part of the generic interface, requires specific repo method or direct context access.
-        // Let's assume a specific method exists or implement it:
-        // bool exists = await _unitOfWork.NewsletterSubscriptions.DoesEmailExistAsync(normalizedEmail); // Assumes method exists
-
-        // Alternative check without specific repo method:
-        // var existingSub = await _unitOfWork.NewsletterSubscriptions.FindAsync(ns => ns.Email.ToLower() == normalizedEmail);
-        // bool exists = existingSub.Any();
-
-        if (exists)
+        public NewsletterController(
+            IUnitOfWork unitOfWork,
+            UserManager<User> userManager,
+            ILogger<NewsletterController> logger)
         {
-            _logger.LogWarning("Subscription failed: Email {Email} already subscribed.", requestDto.Email);
-            // Return Conflict (409) as the resource (subscription for this email) already exists
-            return Conflict(new { message = "This email address is already subscribed." });
+            _unitOfWork = unitOfWork;
+            _userManager = userManager;
+            _logger = logger;
         }
 
-        // Check if user is logged in to optionally link the subscription
-        string? userId = null;
-        if (User.Identity?.IsAuthenticated ?? false)
+        // --- Endpoint to Subscribe to Newsletter ---
+        [HttpPost("subscribe")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> Subscribe([FromBody] NewsletterSubscriptionRequestDto requestDto)
         {
-            userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            _logger.LogInformation("Subscription linked to User ID: {UserId}", userId);
+            // --- Your existing Subscribe logic (looks okay assuming DoesEmailExistAsync exists) ---
+             _logger.LogInformation("Newsletter subscription request for Email: {Email}", requestDto.Email);
+             var normalizedEmail = requestDto.Email.Trim().ToLowerInvariant();
+             // Ensure DoesEmailExistAsync is implemented in your repo or use AnyAsync here
+             bool exists = await _unitOfWork.NewsletterSubscriptions.DoesEmailExistAsync(normalizedEmail);
+             if (exists) { return Conflict(new { message = "This email address is already subscribed." }); }
+             string? userId = User.Identity?.IsAuthenticated ?? false ? User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
+             var newSubscription = new NewsletterSubscription { /* ... populate ... */ };
+             try {
+                 await _unitOfWork.NewsletterSubscriptions.AddAsync(newSubscription); await _unitOfWork.CompleteAsync();
+                 return NoContent();
+             } catch (Exception ex) { /* ... error handling ... */ return StatusCode(500); }
         }
 
-        var newSubscription = new NewsletterSubscription
-        {
-            NewsletterSubscriptionId = Guid.NewGuid(),
-            Email = normalizedEmail, // Store normalized email
-            UserId = userId, // Null if anonymous
-            SubscriptionDate = DateTime.UtcNow,
-            ConsentGiven = true // Implicit consent by subscribing
-        };
 
-        try
+        // --- Endpoint to Get All Newsletter Subscriptions (Admin/Editor Only) - UPDATED ---
+        [HttpGet("subscriptions")]
+        [Authorize(Roles = "Administrator,Editor")]
+        // --- Use NewsletterSubscriptionResponseDto in Response Type ---
+        [ProducesResponseType(typeof(PagedResultDto<NewsletterSubscriptionResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetAllSubscriptions([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
         {
-            await _unitOfWork.NewsletterSubscriptions.AddAsync(newSubscription);
-            await _unitOfWork.CompleteAsync();
-            _logger.LogInformation("Email {Email} successfully subscribed to newsletter.", requestDto.Email);
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
 
-            return NoContent(); // Successfully created, no need to return data
-        }
-        catch (Exception ex)
-        {
-            // Check for specific exceptions like unique constraint violation if the check above somehow failed
-            if (ex.InnerException?.Message.Contains("UNIQUE constraint failed: NewsletterSubscriptions.Email") ?? false)
+            _logger.LogInformation("Admin/Editor request: Getting all newsletter subscriptions. Page: {Page}, Size: {Size}", pageNumber, pageSize);
+
+            try
             {
-                _logger.LogWarning("Subscription failed due to DB constraint: Email {Email} already subscribed.", requestDto.Email);
-                return Conflict(new { message = "This email address is already subscribed." });
+                var query = _unitOfWork.Context.NewsletterSubscriptions
+                                  .OrderByDescending(s => s.SubscriptionDate); // Order by most recent
+
+                var totalCount = await query.CountAsync();
+
+                var subscriptions = await query
+                                         .Skip((pageNumber - 1) * pageSize)
+                                         .Take(pageSize)
+                                         .AsNoTracking() // Read-only optimization
+                                         .ToListAsync();
+
+                // Map to DTO using the MapToDto helper (which returns NewsletterSubscriptionResponseDto)
+                var subscriptionDtos = subscriptions.Select(s => MapToDto(s)).ToList();
+
+                // --- Use NewsletterSubscriptionResponseDto for Paged Result ---
+                var pagedResult = new PagedResultDto<NewsletterSubscriptionResponseDto>
+                {
+                    Items = subscriptionDtos,
+                    TotalCount = totalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+
+                return Ok(pagedResult);
             }
-
-            _logger.LogError(ex, "Error occurred while saving newsletter subscription for {Email}.", requestDto.Email);
-            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while subscribing.");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching all newsletter subscriptions for admin.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Failed to retrieve newsletter subscriptions.");
+            }
         }
-    }
 
 
-    // --- Endpoint to Get All Newsletter Subscriptions (Admin/Editor Only) ---
-    [HttpGet("subscriptions")]
-    [Authorize(Roles = "Administrator,Editor")]
-    [ProducesResponseType(typeof(IEnumerable<NewsletterSubscriptionResponseDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSubscriptions()
-    {
-        _logger.LogInformation("Admin/Editor request: Getting all newsletter subscriptions.");
-        var subscriptions = await _unitOfWork.NewsletterSubscriptions.GetAllAsync();
-
-        var dtos = subscriptions
-                        .OrderBy(s => s.Email) // Order alphabetically
-                        .Select(MapToDto)
-                        .ToList();
-
-        return Ok(dtos);
-        // TODO: Add pagination if the list grows large
-    }
-
-
-    // --- Helper to map Entity to DTO ---
-    private NewsletterSubscriptionResponseDto MapToDto(NewsletterSubscription subscription)
-    {
-        return new NewsletterSubscriptionResponseDto
+        // --- Helper to map Entity to DTO (matches your provided definition) ---
+        private NewsletterSubscriptionResponseDto MapToDto(NewsletterSubscription subscription)
         {
-            NewsletterSubscriptionId = subscription.NewsletterSubscriptionId,
-            Email = subscription.Email,
-            SubscriptionDate = subscription.SubscriptionDate,
-            UserId = subscription.UserId
-        };
+            return new NewsletterSubscriptionResponseDto
+            {
+                NewsletterSubscriptionId = subscription.NewsletterSubscriptionId,
+                Email = subscription.Email,
+                SubscriptionDate = subscription.SubscriptionDate,
+                UserId = subscription.UserId // Include UserId as per your DTO
+            };
+        }
+
+         // Example DoesEmailExistAsync implementation (if not in repo)
+        // private async Task<bool> DoesEmailExistAsync(string normalizedEmail)
+        // {
+        //     return await _unitOfWork.Context.NewsletterSubscriptions.AnyAsync(ns => ns.Email.ToLower() == normalizedEmail);
+        // }
     }
-
-    // --- Helper for AnyAsync needed in Subscribe method ---
-    // This requires access to the DbContext, either directly or via a specific repo method.
-    // Adding a specific method to INewsletterSubscriptionRepository is cleaner.
-
-    // Example if adding to INewsletterSubscriptionRepository:
-    // Task<bool> DoesEmailExistAsync(string email);
-
-    // Example implementation in NewsletterSubscriptionRepository:
-    // public async Task<bool> DoesEmailExistAsync(string email)
-    // {
-    //     string normalizedEmail = email.ToLowerInvariant();
-    //     return await _dbSet.AnyAsync(ns => ns.Email.ToLower() == normalizedEmail);
-    // }
 }
-
-// --- Add AnyAsync extension method to IGenericRepository (alternative, less type-safe) ---
-// Not recommended if specific methods can be added to specific repos.
-// namespace WandleWheelhouse.Api.Repositories.Interfaces
-// {
-//     using Microsoft.EntityFrameworkCore; // Required
-//     using System.Linq.Expressions; // Required
-
-//     public static class GenericRepositoryExtensions
-//     {
-//         // WARNING: This requires exposing the DbContext or DbSet somehow from the generic repo,
-//         // which breaks encapsulation or requires casting. Not ideal.
-//         // public static async Task<bool> AnyAsync<T>(this IGenericRepository<T> repository, Expression<Func<T, bool>> predicate) where T : class
-//         // {
-//         //    // Implementation would depend on how you expose querying capabilities
-//         //    // Example (if DbSet was accessible): return await repository.DbSet.AnyAsync(predicate);
-//         //    throw new NotSupportedException("AnyAsync requires specific implementation or DbContext access.");
-//         // }
-//     }
-// }

@@ -42,7 +42,7 @@ const NewsletterSignupForm: React.FC = () => {
           onChange={(e) => setEmail(e.target.value)}
           required
           disabled={isLoading}
-          className="flex-grow mb-0" // Override default margin bottom
+          className="grow mb-0" // Override default margin bottom
           aria-label="Newsletter email input" // Accessibility
         />
         <Button

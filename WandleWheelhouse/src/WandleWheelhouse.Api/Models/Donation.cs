@@ -5,57 +5,66 @@ using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-    namespace WandleWheelhouse.Api.Models;
+namespace WandleWheelhouse.Api.Models;
 
-    #nullable enable
+#nullable enable
 
-    public enum PaymentMethod
-    {
-        Worldpay,
-        PayPal
-    }
+public enum PaymentMethod
+{
+    Worldpay,
+    PayPal
+}
 
-    public enum PaymentStatus
-    {
-        Pending,
-        Success,
-        Failed,
-        Refunded
-    }
+public enum PaymentStatus
+{
+    Pending,
+    Success,
+    Failed,
+    Refunded
+}
 
-    public class Donation
-    {
-        [Key]
-        public Guid DonationId { get; set; } = Guid.NewGuid();
+public class Donation
+{
+    [Key]
+    public Guid DonationId { get; set; } = Guid.NewGuid();
 
-        [Required]
-        [Column(TypeName = "decimal(18, 2)")]
-        public decimal Amount { get; set; }
+    [Required]
+    [Column(TypeName = "decimal(18, 2)")]
+    public decimal Amount { get; set; }
 
-        [Required]
-        public PaymentMethod Method { get; set; }
+    [Required]
+    public PaymentMethod Method { get; set; }
 
-        [Required]
-        public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
+    [Required]
+    public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
 
-        [Required]
-        public DateTime DonationDate { get; set; } = DateTime.UtcNow;
+    [Required]
+    public DateTime DonationDate { get; set; } = DateTime.UtcNow;
 
-        // Foreign Key to User (if donation is made by a logged-in user)
-        public string? UserId { get; set; }
-        public virtual User? User { get; set; }
+    // Foreign Key to User (if donation is made by a logged-in user)
+    public string? UserId { get; set; }
+    public virtual User? User { get; set; }
 
-        // Information for anonymous donations (if User is null)
-        public string? DonorFirstName { get; set; }
-        public string? DonorLastName { get; set; }
-        public string? DonorEmail { get; set; } // Important for receipts
+    // Information for anonymous donations (if User is null)
+    public string? DonorFirstName { get; set; }
+    public string? DonorLastName { get; set; }
+    public string? DonorEmail { get; set; } // Important for receipts
 
-        // Payment Provider specific details (store transaction IDs, etc.)
-        public string? TransactionId { get; set; } // ID from Worldpay/PayPal
-        public string? PaymentIntentId { get; set; } // E.g., Stripe's Payment Intent ID
+    // Payment Provider specific details (store transaction IDs, etc.)
+    public string? TransactionId { get; set; } // ID from Worldpay/PayPal
+    public string? PaymentIntentId { get; set; } // E.g., Stripe's Payment Intent ID
 
-        // Audit fields
-         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    }
-    #nullable disable
+    [Required]
+    public bool IsRecurring { get; set; } = false; // Default to false
+
+    public Guid? SubscriptionId { get; set; } // Nullable foreign key
+    [ForeignKey("SubscriptionId")]
+    public virtual Subscription? Subscription { get; set; } // Navigation property
+
+    // Audit fields
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+
+}
+#nullable disable

@@ -10,7 +10,8 @@ using WandleWheelhouse.Api.DTOs.Subscriptions;
 using WandleWheelhouse.Api.Models;
 using WandleWheelhouse.Api.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
-using WandleWheelhouse.Api.Services; // Required for Include
+using WandleWheelhouse.Api.Services;
+using WandleWheelhouse.Api.DTOs.Common; // Required for Include
 
 namespace WandleWheelhouse.Api.Controllers;
 
@@ -245,22 +246,44 @@ public class SubscriptionsController : BaseApiController
 
 
     // --- Endpoint to Get All Subscriptions (Admin/Editor Only) ---
-    [HttpGet]
-    [Authorize(Roles = "Administrator,Editor")]
-    [ProducesResponseType(typeof(IEnumerable<SubscriptionResponseDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAllSubscriptions()
-    {
-        _logger.LogInformation("Admin/Editor request: Getting all subscriptions.");
-        // Eagerly load User data when getting all subscriptions
-        var subscriptions = await _unitOfWork.Context.Subscriptions // Access context directly for Include
-                        .Include(s => s.User)
-                        .OrderByDescending(s => s.StartDate)
-                        .ToListAsync();
+// In SubscriptionsController.cs
 
-        var dtos = subscriptions.Select(s => MapToDto(s, s.User)).ToList(); // Use loaded user data
-        return Ok(dtos);
-        // TODO: Implement Pagination
-    }
+[HttpGet("all")]
+[Authorize(Roles = "Administrator,Editor")]
+[ProducesResponseType(typeof(PagedResultDto<SubscriptionResponseDto>), StatusCodes.Status200OK)]
+public async Task<IActionResult> GetAllSubscriptions([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+{
+    _logger.LogInformation("Admin/Editor request: Getting all subscriptions with pageNumber={PageNumber}, pageSize={PageSize}.", pageNumber, pageSize);
+
+    // Ensure pageNumber and pageSize are valid
+    if (pageNumber < 1) pageNumber = 1;
+    if (pageSize < 1) pageSize = 10;
+
+    // Get total count of subscriptions
+    var totalRecords = await _unitOfWork.Context.Subscriptions.CountAsync();
+
+    // Fetch paged subscriptions with User data
+    var subscriptions = await _unitOfWork.Context.Subscriptions
+        .Include(s => s.User)
+        .OrderByDescending(s => s.StartDate)
+        .Skip((pageNumber - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync();
+
+    // Map to DTOs
+    var dtos = subscriptions.Select(s => MapToDto(s, s.User)).ToList();
+
+    // Create paged result
+    var result = new PagedResultDto<SubscriptionResponseDto>
+    {
+        Items = dtos,
+        TotalCount = totalRecords,
+        PageNumber = pageNumber,
+        PageSize = pageSize
+    };
+
+    return Ok(result);
+}
 
 
     // --- Helper Method to Map Subscription Entity to DTO ---

@@ -148,7 +148,7 @@ const SubscriptionPage: React.FC = () => {
                  )}
               </div>
               {/* Action Button Area */}
-              <div className="mt-3 md:mt-0 flex-shrink-0">
+              <div className="mt-3 md:mt-0 shrink-0">
                  {/* Show Cancel button only if Active */}
                  {sub.status === SubscriptionStatus.Active && (
                     <Button

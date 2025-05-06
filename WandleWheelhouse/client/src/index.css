@@ -1,2 +1,80 @@
 @import "tailwindcss";
 
+
+@plugin "@tailwindcss/typography";
+/*@plugin "tailwindcss/forms"; */
+
+body {
+  @apply font-sans antialiased text-gray-900 bg-gray-100; /* Or your preferred base body style */
+}
+
+/* --- Lexical Editor Theme Styles --- */
+
+/* Placeholder text style */
+.editor-placeholder {
+  @apply text-gray-400 text-base absolute top-3 left-3 select-none pointer-events-none;
+}
+
+/* Basic paragraph */
+.editor-paragraph {
+  @apply mb-2 relative; /* Add relative positioning if needed for other features */
+}
+
+/* Headings */
+.editor-heading-h1 {
+  @apply text-3xl font-bold my-4 border-b pb-2;
+}
+.editor-heading-h2 {
+  @apply text-2xl font-semibold my-3 border-b pb-1;
+}
+.editor-heading-h3 {
+  @apply text-xl font-semibold my-2;
+}
+
+/* Lists */
+.editor-list-ol {
+  @apply list-decimal list-inside my-2 ml-6;
+}
+.editor-list-ul {
+  @apply list-disc list-inside my-2 ml-6;
+}
+.editor-listitem {
+  @apply mb-1;
+}
+.editor-nested-listitem {
+  @apply ml-6; /* Indent nested items further */
+}
+
+/* Link */
+.editor-link {
+  @apply text-blue-600 underline hover:text-blue-800;
+}
+
+/* Basic Text Formatting */
+.editor-text-bold {
+  @apply font-bold;
+}
+.editor-text-italic {
+  @apply italic;
+}
+.editor-text-underline {
+  @apply underline;
+}
+.editor-text-strikethrough {
+  @apply line-through;
+}
+.editor-text-code {
+  @apply font-mono bg-gray-100 px-1 py-0.5 rounded text-sm;
+}
+
+/* Blockquote */
+.editor-quote {
+  @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-2;
+}
+
+/* Code Block (Add more styling if CodeNode is enabled later) */
+.editor-code {
+  @apply font-mono bg-gray-800 text-white block p-4 rounded overflow-x-auto text-sm my-4;
+}
+
+/* --- End Lexical Editor Theme Styles --- */

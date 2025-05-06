@@ -7,9 +7,9 @@ export interface PagedResultDto<T> {
     pageNumber: number;
     pageSize: number;
     // Calculated properties (optional, could be calculated in frontend component if needed)
-    // totalPages: number;
-    // hasPreviousPage: boolean;
-    // hasNextPage: boolean;
+    totalPages?: number;
+    hasPreviousPage?: boolean;
+    hasNextPage?: boolean;
   }
   
   // Note: Backend calculates TotalPages, HasPreviousPage, HasNextPage.

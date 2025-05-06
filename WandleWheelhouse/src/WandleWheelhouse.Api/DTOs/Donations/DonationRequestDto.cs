@@ -27,5 +27,9 @@ public class DonationRequestDto
     [EmailAddress]
     [MaxLength(256)]
     public string? DonorEmail { get; set; } // Required if anonymous for receipt? Decide policy.
+                                            // --- ADD THESE PROPERTIES ---
+    public bool IsRecurring { get; set; }      // Added for Admin List View
+    public Guid? SubscriptionId { get; set; }  // Added for Admin List View (nullable Guid)
+                                               // --- END ADD ---
 }
 #nullable disable

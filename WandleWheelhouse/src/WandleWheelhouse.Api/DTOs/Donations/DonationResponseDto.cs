@@ -21,5 +21,9 @@ public class DonationResponseDto
     public string? DonorFirstName { get; set; } // Included if anonymous
     public string? DonorLastName { get; set; }  // Included if anonymous
     public string? DonorEmail { get; set; }     // Included always (user email or anonymous email)
+    // --- ADD THESE PROPERTIES ---
+        public bool IsRecurring { get; set; }      // Added for Admin List View
+        public Guid? SubscriptionId { get; set; }  // Added for Admin List View (nullable Guid)
+        // --- END ADD ---
 }
 #nullable disable

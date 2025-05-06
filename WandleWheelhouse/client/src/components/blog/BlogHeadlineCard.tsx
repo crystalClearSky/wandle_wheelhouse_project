@@ -19,10 +19,10 @@ const BlogHeadlineCard: React.FC<BlogHeadlineCardProps> = ({ article, isFullScre
   const containerBaseClasses = "relative bg-gray-300 overflow-hidden"; // Base styles
   const containerSizeClasses = isFullScreen
     ? "w-full h-[80vh] mb-0 rounded-none shadow-none" // Full screen styles (80% height)
-    : "rounded-lg shadow-lg mb-8 md:mb-12 aspect-video md:aspect-[2/1] lg:aspect-[2.5/1]"; // Original card styles
+    : "rounded-lg shadow-lg mb-8 md:mb-12 aspect-video md:aspect-2/1 lg:aspect-[2.5/1]"; // Original card styles
 
   const contentBaseClasses = "absolute inset-0 flex flex-col justify-end p-6 md:p-8 lg:p-12";
-  const contentGradient = "bg-gradient-to-t from-black/70 via-black/40 to-transparent";
+  const contentGradient = "bg-linear-to-t from-black/70 via-black/40 to-transparent";
 
   // Get API origin for avatar URL construction
   const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || '';
@@ -43,7 +43,7 @@ const BlogHeadlineCard: React.FC<BlogHeadlineCardProps> = ({ article, isFullScre
              className="absolute inset-0 w-full h-full object-cover"
           />
        ) : (
-          <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-purple-200 to-pink-200 flex items-center justify-center text-gray-500 text-xl font-semibold">
+          <div className="absolute inset-0 w-full h-full bg-linear-to-r from-purple-200 to-pink-200 flex items-center justify-center text-gray-500 text-xl font-semibold">
               Featured Post Area
           </div>
        )}

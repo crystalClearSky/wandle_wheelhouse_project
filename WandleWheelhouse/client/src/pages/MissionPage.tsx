@@ -4,7 +4,7 @@ import React from 'react';
 const MissionPage: React.FC = () => {
   return (
     // Add max-width and padding for readability on the full page
-    <div className="max-w-4xl mx-auto px-4 py-8 bg-white shadow-lg rounded-lg">
+    <div className="max-w-4xl mx-auto px-4 py-24 bg-white shadow-lg rounded-lg">
       <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6 border-b pb-3">
         Our Mission
       </h1>

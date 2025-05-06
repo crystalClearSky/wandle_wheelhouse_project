@@ -1,82 +1,148 @@
-// Location: src/pages/DashboardPage.tsx
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router-dom'; // <-- Ensure Link is imported
+import { Link } from 'react-router-dom';
 import Button from '../components/ui/Button';
-import UserList from '../components/admin/UserList'; // Import UserList component
-import BlogList from '../components/admin/BlogList'; // Import BlogList component
+import UserList from '../components/admin/UserList';
+import BlogList from '../components/admin/BlogList';
+import SubscriptionList from '../components/admin/SubscriptionList';
+import DonationList from '../components/admin/DonationList';
+import NewsletterList from '../components/admin/NewsletterList';
+import { UserIcon, PencilSquareIcon, CurrencyPoundIcon, BellIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Helper component for consistent section styling (includes space-y-4 from your preferred version)
-  const AdminSectionCard: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className = '' }) => (
-      <div className={`bg-white p-6 rounded-lg shadow-md border border-gray-200 ${className}`}>
-          <h2 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">{title}</h2>
-          {/* Using space-y-4 for vertical spacing inside card */}
-          <div className="space-y-4">
-              {children}
-          </div>
+  // Simulate loading for initial render
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1000); // Mock API delay
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Modernized AdminSectionCard with animation and skeleton
+  const AdminSectionCard: React.FC<{
+    title: string;
+    children: React.ReactNode;
+    className?: string;
+    icon: React.ReactNode;
+  }> = ({ title, children, className = '', icon }) => (
+    <div
+      className={`bg-white p-6 rounded-xl shadow-lg border border-gray-100 transform transition-all hover:shadow-xl hover:-translate-y-1 ${className} animate-fade-in`}
+    >
+      <div className="flex items-center mb-4">
+        <div className="p-2 bg-indigo-100 rounded-full text-indigo-600">{icon}</div>
+        <h2 className="ml-3 text-xl font-semibold text-gray-800">{title}</h2>
       </div>
+      {isLoading ? (
+        <div className="space-y-4">
+          <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+        </div>
+      ) : (
+        <div className="space-y-4">{children}</div>
+      )}
+    </div>
   );
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-        Admin Dashboard
-      </h1>
-      {user && (
-        <p className="mb-8 text-gray-600">
-          Welcome back, <span className='font-semibold'>{user.firstName}</span>!
-          Your current roles: <span className='font-semibold'>{user.roles.join(', ')}</span>.
-        </p>
-      )}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <header className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900">
+            Admin Dashboard
+          </h1>
+          {user && (
+            <p className="mt-2 text-gray-600">
+              Welcome back, <span className="font-semibold text-indigo-600">{user.firstName}</span>!
+              Your roles: <span className="font-semibold">{user.roles.join(', ')}</span>.
+            </p>
+          )}
+        </header>
 
-      {/* Using the two-column grid layout you preferred */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+        {/* Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+          {/* User Management - Full Width */}
+          <AdminSectionCard
+            title="User Management"
+            className="md:col-span-2"
+            icon={<UserIcon className="h-6 w-6" />}
+          >
+            <UserList />
+          </AdminSectionCard>
 
-        {/* User Management Section - Spanning 2 columns */}
-        <AdminSectionCard title="User Management" className="md:col-span-2">
-           <UserList />
-        </AdminSectionCard>
-
-        {/* Blog Management Section - Integrated BlogList & Create Button Link */}
-        <AdminSectionCard title="Blog Management">
-           {/* Render the BlogList component */}
-           <BlogList />
-           {/* Add Create New Post button/link below the list */}
+          {/* Blog Management */}
+          <AdminSectionCard
+            title="Blog Management"
+            icon={<PencilSquareIcon className="h-6 w-6" />}
+          >
+            <BlogList />
             <div className="mt-4 border-t pt-4">
-                {/* Link the button to the create page */}
-                <Link to="/admin/blog/create">
-                    <Button variant="primary">Create New Post</Button>
-                 </Link>
-             </div>
-        </AdminSectionCard>
+              <Link to="/admin/blog/create">
+                <Button
+                  variant="primary"
+                  className="w-full md:w-auto transition-transform hover:scale-105"
+                >
+                  Create New Post
+                </Button>
+              </Link>
+            </div>
+          </AdminSectionCard>
 
-        {/* Donation Management Section Placeholder */}
-        <AdminSectionCard title="Donation Management">
-          <p className="text-sm text-gray-600">View donation records and history.</p>
-          <Button disabled variant="secondary" className="mt-2">View Donations (WIP)</Button>
-        </AdminSectionCard>
+          {/* Donation Management */}
+          <AdminSectionCard
+            title="Donation Management"
+            icon={<CurrencyPoundIcon className="h-6 w-6" />}
+          >
+            <DonationList />
+          </AdminSectionCard>
 
-        {/* Subscription Management Section Placeholder */}
-        <AdminSectionCard title="Subscription Management">
-           <p className="text-sm text-gray-600">View and manage user subscriptions.</p>
-          <Button disabled variant="secondary" className="mt-2">View Subscriptions (WIP)</Button>
-        </AdminSectionCard>
+          {/* Subscription Management */}
+          <AdminSectionCard
+            title="Subscription Management"
+            icon={<BellIcon className="h-6 w-6" />}
+          >
+            <SubscriptionList />
+          </AdminSectionCard>
 
-        {/* Newsletter Management Section Placeholder */}
-        <AdminSectionCard title="Newsletter Subscribers">
-          <p className="text-sm text-gray-600">View list of newsletter subscribers.</p>
-          <Button disabled variant="secondary" className="mt-2">View Subscribers (WIP)</Button>
-        </AdminSectionCard>
+          {/* Newsletter Subscribers */}
+          <AdminSectionCard
+            title="Newsletter Subscribers"
+            icon={<BellIcon className="h-6 w-6" />}
+          >
+            <NewsletterList />
+          </AdminSectionCard>
 
-        {/* Add more sections as needed */}
-
+          {/* System Status */}
+          <AdminSectionCard
+            title="System Status"
+            icon={<ChartBarIcon className="h-6 w-6" />}
+          >
+            <p className="text-sm text-gray-600">Display basic system health or stats.</p>
+            <Button
+              disabled
+              variant="secondary"
+              className="mt-2 w-full md:w-auto transition-transform hover:scale-105"
+            >
+              View Stats (WIP)
+            </Button>
+          </AdminSectionCard>
+        </div>
       </div>
     </div>
   );
 };
+
+// Inline styles for animations
+// const styles = `
+//   @keyframes fadeIn {
+//     from { opacity: 0; transform: translateY(10px); }
+//     to { opacity: 1; transform: translateY(0); }
+//   }
+//   .animate-fade-in {
+//     animation: fadeIn 0.5s ease-out;
+//   }
+// `;
 
 export default DashboardPage;

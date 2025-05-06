@@ -106,14 +106,21 @@ builder.Services.AddAuthorization(options =>
 });
 
 // CORS Configuration (Global)
+// Inside Program.cs -> Service Configuration section
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowWebApp",
+    options.AddPolicy("AllowWebApp", // Name this policy
         policyBuilder =>
         {
             List<string> allowedOrigins = new List<string>();
-            if (isDevelopment)
+            if (isDevelopment) // Check if this is true when you run
             {
+                // Add YOUR specific frontend development URL(s)
+                allowedOrigins.Add("http://localhost:5174"); // <-- ADD THIS
+                allowedOrigins.Add("http://127.0.0.1:5174"); // <-- AND THIS (Good practice)
+
+                // Keep existing ones if needed (e.g., Vite default, Swagger)
                 allowedOrigins.Add("http://localhost:5173");
                 allowedOrigins.Add("http://127.0.0.1:5173");
                 allowedOrigins.Add($"https://localhost:{builder.Configuration.GetValue<int>("HttpsPort", 7136)}");
@@ -121,16 +128,16 @@ builder.Services.AddCors(options =>
             }
             else
             {
+                // Production frontend URL(s)
                 allowedOrigins.Add("https://wandlewheelhouse.org"); // Replace with actual prod URL
             }
 
-            policyBuilder.WithOrigins(allowedOrigins.ToArray())
+            policyBuilder.WithOrigins(allowedOrigins.ToArray()) // Use the updated list
                          .AllowAnyHeader()
                          .AllowAnyMethod()
-                         .AllowCredentials();
+                         .AllowCredentials(); // Allow credentials (needed for auth)
         });
 });
-
 // Controller Services
 builder.Services.AddControllers();
 

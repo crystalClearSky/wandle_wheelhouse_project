@@ -1,12 +1,13 @@
 // Location: src/components/admin/BlogList.tsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom'; // Use Link/Navigate for Edit later
+import { Link, useNavigate } from 'react-router-dom'; // Import Link and useNavigate
 import AdminService from '../../services/AdminService';
 import { BlogArticleCardDto } from '../../dto/Blog/BlogArticleCardDto'; // Ensure this includes isPublished
 import PaginationControls from '../common/PaginationControls';
 import Button from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext'; // To check roles for actions
+// Removed ManageRolesModal import as it's not used here
 
 const BlogList: React.FC = () => {
   const { user } = useAuth(); // Get current user to check roles
@@ -20,14 +21,19 @@ const BlogList: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null); // For fetch errors
   const [actionError, setActionError] = useState<string | null>(null); // For action errors (publish/delete)
-  const [rowLoadingStates, setRowLoadingStates] = useState<Record<string, { publishing?: boolean, deleting?: boolean }>>({}); // Loading per row/action
+  // Loading state per row/action type
+  const [rowLoadingStates, setRowLoadingStates] = useState<Record<string, { publishing?: boolean, deleting?: boolean }>>({});
 
- // const navigate = useNavigate(); // Hook for navigation (e.g., to edit page)
+  const navigate = useNavigate(); // Hook for navigation (used in handleEdit)
+
+  // Get API origin for potential avatar display (though not used in this table version)
+  // const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || '';
 
   // --- Data Fetching ---
   const fetchArticles = useCallback(async () => {
-    // setError(null); // Clear general errors on refetch
-    setActionError(null); // Clear action errors on refetch
+    // Clear errors on refetch
+    setError(null);
+    setActionError(null);
     try {
       console.log(`Workspaceing ALL articles - Page: ${currentPage}`);
       const result = await AdminService.getAllBlogArticles(currentPage, pageSize);
@@ -48,7 +54,7 @@ const BlogList: React.FC = () => {
   useEffect(() => {
     setIsLoading(true); // Indicate loading when page changes or mounts
     fetchArticles();
-  }, [fetchArticles]); // Use memoized fetchUsers as dependency
+  }, [fetchArticles]); // Use memoized fetchArticles as dependency
 
   // --- Handlers ---
   const handlePageChange = (newPage: number) => {
@@ -94,7 +100,7 @@ const BlogList: React.FC = () => {
        if (articles.length === 1 && currentPage > 1) {
            setCurrentPage(prev => prev - 1); // Go to previous page if last item deleted
        } else {
-           // Refetch current page, set loading true briefly for visual feedback
+           // Refetch current page, indicate loading
            setIsLoading(true);
            await fetchArticles();
        }
@@ -104,39 +110,42 @@ const BlogList: React.FC = () => {
         setActionError(message);
         setTimeout(() => setActionError(null), 5000);
      } finally {
-        // Ensure loading state is cleared even if refetch didn't happen (e.g., on page change)
         setRowLoadingStates(prev => ({ ...prev, [articleId]: { ...prev[articleId], deleting: false } }));
+        // setIsLoading(false); // Might already be handled by fetchArticles finally block
      }
   };
 
-  const handleEdit = (slug: string | null | undefined) => {
-     if (!slug) {
-         alert("Cannot edit article: missing slug.");
+  // Updated handler to navigate using ID
+  const handleEdit = (articleId: string) => {
+     if (!articleId) {
+         console.error("Cannot edit article: missing ID.");
+         alert("Cannot edit article: missing ID.");
          return;
      }
-     // navigate(`/admin/blog/edit/${slug}`); // TODO: Uncomment when edit page route exists
-      alert(`Maps to edit page for slug: ${slug} (not implemented yet)`);
+     console.log(`Navigating to edit page for ID: ${articleId}`);
+     navigate(`/admin/blog/edit/${articleId}`); // Navigate using ID
   };
 
    // Helper to format dates
   const formatDate = (dateString: string | null | undefined): string => {
       if (!dateString) return 'N/A';
       try {
-          // Show date only for admin list brevity
           return new Date(dateString).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
       } catch { return 'Invalid Date'; }
   };
 
+
   // --- Render Logic ---
   if (isLoading && articles.length === 0) return <p className="text-center p-4 text-gray-500">Loading blog posts...</p>;
-  if (error) return <p className="text-center text-red-600 bg-red-100 p-3 rounded border border-red-200">{error}</p>;
+  // Display general fetch error only if there are no articles currently shown
+  if (error && articles.length === 0) return <p className="text-center text-red-600 bg-red-100 p-3 rounded border border-red-200">{error}</p>;
 
   return (
-     <div className="overflow-x-auto"> {/* Ensures table doesn't break layout on small screens */}
+     <div className="overflow-x-auto">
         {/* Display action errors above the table */}
         {actionError && <p className="text-center text-red-600 bg-red-100 p-3 rounded border border-red-200 mb-4">{actionError}</p>}
-        {/* Display subtle loading indicator during refetches */}
-        {isLoading && articles.length > 0 && <p className="text-center text-blue-500 text-sm mb-2">Refreshing post list...</p>}
+        {/* Display subtle loading indicator during refetches/pagination */}
+        {isLoading && articles.length > 0 && <p className="text-center text-blue-500 text-sm mb-2">Loading...</p>}
 
          <table className="min-w-full bg-white border border-gray-200 shadow rounded">
            <thead className="bg-gray-50 border-b border-gray-200">
@@ -151,24 +160,27 @@ const BlogList: React.FC = () => {
            <tbody className="divide-y divide-gray-200">
               {/* Handle Empty State */}
               {articles.length === 0 && !isLoading && (
-                  <tr><td colSpan={5} className="text-center py-10 text-gray-500">No blog posts found.</td></tr>
+                  <tr><td colSpan={5} className="text-center py-10 text-gray-500">No blog posts created yet.</td></tr>
               )}
               {/* Map Through Articles */}
              {articles.map((article) => {
-                 // Ensure isPublished exists on the article object (from backend/DTO)
-                 const isPublished = article.isPublished; // Removed the 'as any' cast
+                 // Ensure isPublished exists on the article object (requires backend DTO update)
+                 const isPublished = article.isPublished ?? false; // Default to false if missing
                  const isLoadingPublish = rowLoadingStates[article.blogArticleId]?.publishing;
                  const isLoadingDelete = rowLoadingStates[article.blogArticleId]?.deleting;
                  const isRowLoading = isLoadingPublish || isLoadingDelete;
 
                  return (
-                   <tr key={article.blogArticleId} className={`hover:bg-gray-50 ${isRowLoading ? 'opacity-60 pointer-events-none' : ''}`}> {/* Indicate loading state on row */}
-                     {/* Title (Truncated potentially) */}
+                   <tr key={article.blogArticleId} className={`hover:bg-gray-50 ${isRowLoading ? 'opacity-60' : ''}`}> {/* Don't block pointer events fully */}
+                     {/* Title (Linked to public view) */}
                      <td className="px-4 py-2 text-sm font-medium text-gray-900 max-w-xs lg:max-w-sm xl:max-w-md truncate" title={article.title}>
-                         {/* Maybe link title to public view? */}
-                         <Link to={`/blog/${article.slug}`} target="_blank" rel="noopener noreferrer" className='hover:text-blue-600 hover:underline' title={`View post: ${article.title}`}>
-                            {article.title}
-                         </Link>
+                         {article.slug ? (
+                            <Link to={`/blog/${article.slug}`} target="_blank" rel="noopener noreferrer" className='hover:text-blue-600 hover:underline' title={`View post: ${article.title}`}>
+                                {article.title}
+                            </Link>
+                         ) : (
+                             <span>{article.title}</span> // No link if no slug
+                         )}
                      </td>
                      {/* Author */}
                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600">{article.authorFullName || 'N/A'}</td>
@@ -183,7 +195,8 @@ const BlogList: React.FC = () => {
                      </td>
                      {/* Action Buttons */}
                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium space-x-2">
-                        <Button variant="secondary" className="text-xs py-1 px-2" onClick={() => handleEdit(article.slug)} disabled={isRowLoading}>Edit</Button>
+                        {/* Use updated handleEdit with articleId */}
+                        <Button variant="secondary" className="text-xs py-1 px-2" onClick={() => handleEdit(article.blogArticleId)} disabled={isRowLoading}>Edit</Button>
                         <Button
                            variant={isPublished ? "secondary" : "primary"}
                            className="text-xs py-1 px-2"

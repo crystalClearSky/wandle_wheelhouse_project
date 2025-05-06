@@ -10,6 +10,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import BlogPostCreatePage from './pages/admin/BlogPostCreatePage'; // <-- Import Create Page
+import BlogPostEditPage from './pages/admin/BlogPostEditPage'; // <-- Added this import
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={['Administrator', 'Editor']} />}>
              <Route path="dashboard" element={<DashboardPage />} />
              <Route path="admin/blog/create" element={<BlogPostCreatePage />} /> {/* <-- Added Create Route */}
+             <Route path="admin/blog/edit/:id" element={<BlogPostEditPage />} />
              {/* Add route for editing later: /admin/blog/edit/:slug */}
           </Route>
 

@@ -9,11 +9,11 @@ export interface DonationResponseDto {
   status: PaymentStatus;
   donationDate: string; // ISO Date string
   transactionId?: string | null;
-
-  // Donor info
   userId?: string | null;
-  userFullName?: string | null; // Sent if userId is present
+  userFullName?: string | null; // Sent if userId is present or derived from donor fields
   donorFirstName?: string | null; // Sent if anonymous
-  donorLastName?: string | null;  // Sent if anonymous
-  donorEmail?: string | null;     // Email (user's or anonymous)
+  donorLastName?: string | null; // Sent if anonymous
+  donorEmail?: string | null; // Email (user's or anonymous)
+  isRecurring: boolean; // Indicates if donation is part of a recurring subscription
+  subscriptionId?: string | null; // GUID as string for recurring donations
 }

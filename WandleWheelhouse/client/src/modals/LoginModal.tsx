@@ -1,14 +1,14 @@
 import React, { useState, FormEvent } from 'react';
-import Modal from '../components/ui/Modal'; // Our reusable Modal
-import Input from '../components/ui/Input';   // Our reusable Input
-import Button from '../components/ui/Button'; // Our reusable Button
-import { useAuth } from '../contexts/AuthContext'; // Hook to access auth context
-import AuthService from '../services/AuthService'; // API service
+import Modal from '../components/ui/Modal';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
+import { useAuth } from '../contexts/AuthContext';
+import AuthService from '../services/AuthService';
+import { ExclamationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface LoginModalProps {
   isOpen: boolean;
   onRequestClose: () => void;
-  // Optional: Callback to open the register modal if needed
   onSwitchToRegister?: () => void;
 }
 
@@ -17,105 +17,159 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onRequestClose, onSwitc
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth(); // Get login function from context
+  const { login } = useAuth();
 
   const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault(); // Prevent standard form submission
+    event.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
       const loginDto = { email, password };
-      const response = await AuthService.login(loginDto); // Call API via service
+      const response = await AuthService.login(loginDto);
 
-      // AuthService should throw if response.data.isSuccess is false
-      // or token/userInfo are missing
       if (response.token && response.userInfo) {
-        login(response.token, response.userInfo); // Update global auth state
-        onRequestClose(); // Close modal on successful login
-        // Clear form fields (optional, as modal closes)
+        login(response.token, response.userInfo);
+        onRequestClose();
         setEmail('');
         setPassword('');
       } else {
-         // Should ideally be caught by the catch block due to error thrown in service
-         setError(response.message || "Login failed: Unexpected response.");
+        setError(response.message || 'Login failed: Unexpected response.');
       }
-
-    } catch (err: unknown) { // <--- Change to unknown
-        let message = 'An unexpected error occurred during login.';
-        // The error thrown by AuthService should now be a standard Error
-        if (err instanceof Error) {
-            message = err.message;
-        } else if (typeof err === 'string') {
-            message = err;
-        }
-        // Optionally, check for AxiosError again if AuthService might rethrow differently
-        // else if (axios.isAxiosError(err)) {
-        //    message = err.response?.data?.message || err.message || message;
-        // }
-        setError(message);
-      } finally {
-        setIsLoading(false);
+    } catch (err: unknown) {
+      let message = 'An unexpected error occurred during login.';
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === 'string') {
+        message = err;
       }
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Close modal and clear state
   const handleClose = () => {
-      setError(null);
-      setIsLoading(false);
-      setEmail('');
-      setPassword('');
-      onRequestClose();
-  }
+    setError(null);
+    setIsLoading(false);
+    setEmail('');
+    setPassword('');
+    onRequestClose();
+  };
 
   return (
-    <Modal isOpen={isOpen} onRequestClose={handleClose} title="Login">
-      <form onSubmit={handleSubmit}>
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <span className="block sm:inline">{error}</span>
+    <Modal
+      isOpen={isOpen}
+      onRequestClose={handleClose}
+      title="Log In to Your Account"
+    >
+      <div className="relative bg-white rounded-xl sm:p-4 max-w-lg w-full mx-4 sm:mx-auto">
+        {/* Close Button */}
+        <button
+          onClick={handleClose}
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-full transition-colors duration-200"
+          aria-label="Close modal"
+        >
+          <XMarkIcon className="h-6 w-6" />
+        </button>
+
+        {/* Modal Header */}
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-6 text-center">
+          Log In
+        </h2>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Error Alert */}
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg flex items-center space-x-2" role="alert">
+              <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+
+          {/* Email Input */}
+          <div>
+            <Input
+              label="Email Address"
+              id="login-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isLoading}
+              placeholder="you@example.com"
+              className="w-full border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg"
+            />
           </div>
-        )}
-        <Input
-          label="Email Address"
-          id="login-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={isLoading}
-          placeholder="you@example.com"
-        />
-        <Input
-          label="Password"
-          id="login-password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={isLoading}
-          placeholder="••••••••"
-        />
-        <div className="mt-6 flex flex-col items-center">
-          <Button type="submit" variant="primary" disabled={isLoading} className="w-full">
-            {isLoading ? 'Logging In...' : 'Login'}
-          </Button>
-           {/* Optional Links */}
-           <div className="text-sm mt-4 text-center">
-               {/* <a href="/forgot-password" onClick={(e)=>{e.preventDefault(); alert('Forgot password clicked!')}} className="font-medium text-blue-600 hover:text-blue-500">
-                   Forgot password?
-               </a> */}
-               {onSwitchToRegister && (
-                   <p className="mt-1">
-                       Don't have an account?{' '}
-                       <button type="button" onClick={onSwitchToRegister} className="font-medium text-blue-600 hover:text-blue-500 focus:outline-none">
-                           Register here
-                       </button>
-                   </p>
-               )}
-           </div>
+
+          {/* Password Input */}
+          <div>
+            <Input
+              label="Password"
+              id="login-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={isLoading}
+              placeholder="••••••••"
+              className="w-full border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex flex-col items-center">
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isLoading}
+              className="w-full py-3 px-4 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-transform hover:scale-105 flex items-center justify-center"
+            >
+              {isLoading ? (
+                <svg
+                  className="animate-spin h-5 w-5 mr-2 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              ) : null}
+              {isLoading ? 'Logging In...' : 'Log In'}
+            </Button>
+          </div>
+        </form>
+
+        {/* Links */}
+        <div className="text-sm mt-6 text-center">
+          {onSwitchToRegister && (
+            <p>
+              Don’t have an account?{' '}
+              <button
+                type="button"
+                onClick={onSwitchToRegister}
+                className="font-semibold text-indigo-600 hover:text-indigo-700 focus:outline-none transition-colors duration-200"
+                disabled={isLoading}
+              >
+                Register here
+              </button>
+            </p>
+          )}
         </div>
-      </form>
+      </div>
     </Modal>
   );
 };

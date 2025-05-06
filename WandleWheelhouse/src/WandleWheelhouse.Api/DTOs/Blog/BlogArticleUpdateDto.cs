@@ -30,6 +30,6 @@ public class BlogArticleUpdateDto
 
      // Allow updating published status directly? Or use specific endpoints?
      // Let's assume specific endpoints are preferred. Remove IsPublished from here.
-     // public bool? IsPublished { get; set; }
+     public bool? IsPublished { get; set; }
 }
 #nullable disable
