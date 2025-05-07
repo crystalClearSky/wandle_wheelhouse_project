@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../modals/LoginModal';
 import RegisterModal from '../modals/RegisterModal';
@@ -10,6 +10,7 @@ import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout, isLoading } = useAuth();
+  const { pathname } = useLocation();
 
   // --- State ---
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -17,6 +18,7 @@ const Navbar: React.FC = () => {
   const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLogoShrunk, setIsLogoShrunk] = useState(false);
 
   // --- Refs for closing menus ---
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -52,6 +54,23 @@ const Navbar: React.FC = () => {
   const toggleUserDropdown = () => setIsUserDropdownOpen((prev) => !prev);
   const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev);
 
+  // --- Scroll Handler for Logo Scaling (only on homepage) ---
+  useEffect(() => {
+    if (pathname === '/') {
+      const handleScroll = () => {
+        const scrollPosition = window.scrollY;
+        const windowHeight = window.innerHeight;
+        const scrollThreshold = windowHeight * 0.2; // 20% of window height
+        setIsLogoShrunk(scrollPosition > scrollThreshold);
+      };
+
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
+    } else {
+      setIsLogoShrunk(false); // Reset on non-homepage
+    }
+  }, [pathname]);
+
   // --- Click Outside Handler ---
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -79,18 +98,22 @@ const Navbar: React.FC = () => {
   return (
     <>
       {/* --- Logo (Top Left) --- */}
-      <div className="fixed top-6 left-6 z-50 animate-fade-in"> 
-  <Link
-    to="/"
-    className="opacity-95 flex items-center justify-center w-[100px] h-[120px] max-w-[450px]:w-[90px] max-w-[450px]:h-[90px] sm:w-[150px] sm:h-[180px] md:w-[180px] md:h-[220px] lg:w-[200px] lg:h-[250px] bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-0 max-w-[450px]:p-0 sm:p-0 md:p-0 lg:p-0 rounded-xl shadow-lg text-xs max-w-[450px]:text-xs sm:text-lg md:text-lg lg:text-xl font-extrabold  transition-all duration-300 transform hover:scale-105  text-center leading-none"
-  >
-    <img
-      src="/src/assets/photo_2025-05-06_14-16-42.jpg"
-      alt="Wandle Wheelhouse"
-      className="w-full h-full object-cover rounded-xl"
-    />
-  </Link>
-</div>
+      {pathname !== '/dashboard' && (
+        <div className="fixed top-6 left-6 z-50 animate-fade-in">
+          <Link
+            to="/"
+            className={`opacity-95 flex items-center justify-center w-[100px] h-[120px] max-w-[450px]:w-[90px] max-w-[450px]:h-[90px] sm:w-[150px] sm:h-[180px] md:w-[180px] md:h-[220px] lg:w-[200px] lg:h-[250px] bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-0 max-w-[450px]:p-0 sm:p-0 md:p-0 lg:p-0 rounded-xl shadow-lg text-xs max-w-[450px]:text-xs sm:text-lg md:text-lg lg:text-xl font-extrabold transition-all duration-300 transform hover:scale-105 text-center leading-none ${
+              pathname !== '/' || isLogoShrunk ? 'scale-50 origin-top-left' : 'scale-100'
+            }`}
+          >
+            <img
+              src="/src/assets/photo_2025-05-06_14-16-42.jpg"
+              alt="Wandle Wheelhouse"
+              className="w-full h-full object-cover rounded-xl"
+            />
+          </Link>
+        </div>
+      )}
 
       {/* --- Menu Island / Controls (Top Right) --- */}
       <div className="fixed top-6 right-6 z-50 flex items-center space-x-4 animate-fade-in">

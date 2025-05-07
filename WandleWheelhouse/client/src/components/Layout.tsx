@@ -3,10 +3,12 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Footer from './Footer';
 import Navbar from './Navbar';
 import ProfilePage from '../pages/ProfilePage';
+import DashboardPage from '../pages/DashboardPage';
 
 const Layout: React.FC = () => {
   const location = useLocation();
   const isProfilePage = location.pathname === '/profile';
+  const isDashboardPage = location.pathname === '/dashboard';
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -17,6 +19,10 @@ const Layout: React.FC = () => {
         {isProfilePage ? (
           <div className="pt-[54px] max-w-[20px]:pt-[20px] sm:pt-[40px] md:pt-[50px] lg:pt-[50px]">
             <ProfilePage />
+          </div>
+        ) : isDashboardPage ? (
+          <div className="pt-[54px] max-w-[20px]:pt-[20px] sm:pt-[40px] md:pt-[50px] lg:pt-[50px]">
+            <DashboardPage />
           </div>
         ) : (
           <Outlet />
