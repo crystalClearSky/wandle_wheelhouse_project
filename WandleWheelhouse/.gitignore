@@ -40,3 +40,18 @@ sketch
 # End of https://www.toptal.com/developers/gitignore/api/react,visualstudiocode
 .tmp.driveupload/*
 
+
+# .dockerignore
+
+# ... other ignores (like backend bin/obj) ...
+
+# Client specific ignores
+client/node_modules
+client/dist
+client/.env
+client/.env.*
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+
+# ... other ignores ... 

@@ -175,19 +175,21 @@ builder.Services.AddSwaggerGen(options =>
     // Include XML Comments
     try
     {
-         var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-         var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
-         if (File.Exists(xmlPath))
-         {
-             options.IncludeXmlComments(xmlPath);
-             Console.WriteLine($"Successfully included XML comments from: {xmlPath}");
-         } else {
-             Console.WriteLine($"XML comment file not found at: {xmlPath}");
-         }
+        var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+        if (File.Exists(xmlPath))
+        {
+            options.IncludeXmlComments(xmlPath);
+            Console.WriteLine($"Successfully included XML comments from: {xmlPath}");
+        }
+        else
+        {
+            Console.WriteLine($"XML comment file not found at: {xmlPath}");
+        }
     }
-    catch(Exception ex)
+    catch (Exception ex)
     {
-         Console.WriteLine($"Error including XML comments: {ex.Message}");
+        Console.WriteLine($"Error including XML comments: {ex.Message}");
     }
 
     // --- Register the Custom Operation Filter for File Uploads ---
@@ -203,8 +205,42 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 // --- 2. Configure HTTP Request Pipeline ---
 
 var app = builder.Build();
+///////
+// Ensure this is placed AFTER builder.Build() and BEFORE app.Run()
+if (app.Environment.IsDevelopment()) // Or a specific configuration check
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        try
+        {
+            var context = services.GetRequiredService<ApplicationDbContext>();
+            if (context.Database.GetPendingMigrations().Any())
+            {
+                app.Logger.LogInformation("Applying pending database migrations...");
+                await context.Database.MigrateAsync(); // Applies pending migrations
+                app.Logger.LogInformation("Database migrations applied successfully.");
+            }
+            else
+            {
+                app.Logger.LogInformation("No pending database migrations to apply.");
+            }
+
+            // Optional: Seed data if needed after migrations
+            // await SeedData.Initialize(services); // Example call if you have a seeder
+        }
+        catch (Exception ex)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+            // Optionally, rethrow or handle as critical startup failure
+            // throw; // Re-throwing will stop the application if DB migration fails
+        }
+    }
+}
 
 // --- Development Only: Reset SQLite Database on Startup ---
+///////
 if (app.Environment.IsDevelopment())
 {
     // using (var scope = app.Services.CreateScope())
@@ -258,11 +294,14 @@ app.UseStaticFiles();
 var uploadsPath = Path.Combine(app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"), "uploads");
 if (!Directory.Exists(uploadsPath))
 {
-    try {
-         Directory.CreateDirectory(uploadsPath);
-         Console.WriteLine($"Created directory: {uploadsPath}");
-    } catch (Exception ex) {
-         Console.WriteLine($"Failed to create directory {uploadsPath}: {ex.Message}");
+    try
+    {
+        Directory.CreateDirectory(uploadsPath);
+        Console.WriteLine($"Created directory: {uploadsPath}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Failed to create directory {uploadsPath}: {ex.Message}");
     }
 }
 

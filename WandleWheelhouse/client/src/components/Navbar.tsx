@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import LoginModal from '../modals/LoginModal';
-import RegisterModal from '../modals/RegisterModal';
-import DonationModal from '../modals/DonationModal';
-import Button from './ui/Button';
-import Avatar from './ui/Avatar';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import photoAsset from "../assets/photo_2025-05-06_14-16-42.jpg";
+import { useAuth } from "../contexts/AuthContext";
+import DonationModal from "../modals/DonationModal";
+import LoginModal from "../modals/LoginModal";
+import RegisterModal from "../modals/RegisterModal";
+import Avatar from "./ui/Avatar";
+import Button from "./ui/Button";
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout, isLoading } = useAuth();
@@ -56,7 +57,7 @@ const Navbar: React.FC = () => {
 
   // --- Scroll Handler for Logo Scaling (only on homepage) ---
   useEffect(() => {
-    if (pathname === '/') {
+    if (pathname === "/") {
       const handleScroll = () => {
         const scrollPosition = window.scrollY;
         const windowHeight = window.innerHeight;
@@ -64,8 +65,8 @@ const Navbar: React.FC = () => {
         setIsLogoShrunk(scrollPosition > scrollThreshold);
       };
 
-      window.addEventListener('scroll', handleScroll);
-      return () => window.removeEventListener('scroll', handleScroll);
+      window.addEventListener("scroll", handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
     } else {
       setIsLogoShrunk(false); // Reset on non-homepage
     }
@@ -75,7 +76,10 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (userDropdownRef.current && !userDropdownRef.current.contains(target)) {
+      if (
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(target)
+      ) {
         setIsUserDropdownOpen(false);
       }
       if (
@@ -88,26 +92,28 @@ const Navbar: React.FC = () => {
       }
     };
     if (isUserDropdownOpen || isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     } else {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isUserDropdownOpen, isMobileMenuOpen]);
 
   return (
     <>
       {/* --- Logo (Top Left) --- */}
-      {pathname !== '/dashboard' && (
+      {pathname !== "/dashboard" && (
         <div className="fixed top-6 left-6 z-50 animate-fade-in">
           <Link
             to="/"
             className={`opacity-95 flex items-center justify-center w-[100px] h-[120px] max-w-[450px]:w-[90px] max-w-[450px]:h-[90px] sm:w-[150px] sm:h-[180px] md:w-[180px] md:h-[220px] lg:w-[200px] lg:h-[250px] bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-0 max-w-[450px]:p-0 sm:p-0 md:p-0 lg:p-0 rounded-xl shadow-lg text-xs max-w-[450px]:text-xs sm:text-lg md:text-lg lg:text-xl font-extrabold transition-all duration-300 transform hover:scale-105 text-center leading-none ${
-              pathname !== '/' || isLogoShrunk ? 'scale-50 origin-top-left' : 'scale-100'
+              pathname !== "/" || isLogoShrunk
+                ? "scale-50 origin-top-left"
+                : "scale-100"
             }`}
           >
             <img
-              src="/src/assets/photo_2025-05-06_14-16-42.jpg"
+              src={photoAsset}
               alt="Wandle Wheelhouse"
               className="w-full h-full object-cover rounded-xl"
             />
@@ -174,7 +180,7 @@ const Navbar: React.FC = () => {
               title="User Menu"
             >
               <Avatar
-                name={user.firstName + ' ' + user.lastName}
+                name={user.firstName + " " + user.lastName}
                 imageUrl={user.avatarUrl}
                 size="lg"
                 className="cursor-pointer w-full h-full object-cover rounded-full"
@@ -190,9 +196,9 @@ const Navbar: React.FC = () => {
                   Profile
                 </Link>
                 <div className="border-t border-gray-100 my-1"></div>
-                {user.roles.includes('Member') &&
-                  !user.roles.includes('Administrator') &&
-                  !user.roles.includes('Editor') && (
+                {user.roles.includes("Member") &&
+                  !user.roles.includes("Administrator") &&
+                  !user.roles.includes("Editor") && (
                     <Link
                       to="/subscription"
                       className="block px-5 py-3 text-base font-medium text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-md"
@@ -201,7 +207,8 @@ const Navbar: React.FC = () => {
                       Subscription
                     </Link>
                   )}
-                {(user.roles.includes('Administrator') || user.roles.includes('Editor')) && (
+                {(user.roles.includes("Administrator") ||
+                  user.roles.includes("Editor")) && (
                   <Link
                     to="/dashboard"
                     className="block px-5 py-3 text-base font-medium text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-md"
@@ -210,9 +217,9 @@ const Navbar: React.FC = () => {
                     Dashboard
                   </Link>
                 )}
-                {(user.roles.includes('Member') ||
-                  user.roles.includes('Administrator') ||
-                  user.roles.includes('Editor')) && (
+                {(user.roles.includes("Member") ||
+                  user.roles.includes("Administrator") ||
+                  user.roles.includes("Editor")) && (
                   <div className="border-t border-gray-100 my-1"></div>
                 )}
                 <button

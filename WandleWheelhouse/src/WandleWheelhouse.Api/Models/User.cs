@@ -35,6 +35,6 @@ public class User : IdentityUser
     public DateTime? DeletedAt { get; set; }
     // --- Add Avatar URL field ---
     [MaxLength(2048)] // Max URL length
-    public string? AvatarUrl { get; set; }
+    public string? AvatarUrl { get; set; } // small
 }
 #nullable disable // Disable nullable checking if needed elsewhere

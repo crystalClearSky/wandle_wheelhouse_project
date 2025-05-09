@@ -1,0 +1,26 @@
+# Location: docker-compose.override.yml
+# Development-specific overrides
+
+
+services:
+  api:
+    environment:
+      # Read variables from the .env file
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=${ASPNETCORE_URLS}
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      # Add any other necessary environment variables for the API
+    volumes:
+      # Mount a host directory into the container for the SQLite DB
+      # Creates a 'Data' folder in your solution root on the host if it doesn't exist
+      - ./Data:/app/Data # Persist SQLite DB outside the container
+
+  client:
+    environment:
+         # Client doesn't strictly need runtime env vars now if API proxied by Nginx
+         # Example if needed later: - VITE_SOME_OTHER_KEY=${VITE_SOME_OTHER_KEY}
+         - NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx # Often needed for env var substitution in nginx config if used
+    # No volumes needed for client in production build serving

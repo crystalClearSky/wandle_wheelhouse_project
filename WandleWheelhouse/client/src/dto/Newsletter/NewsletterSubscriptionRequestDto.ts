@@ -1,7 +1,9 @@
-// src/dto/Newsletter/NewsletterSubscriptionRequestDto.ts
-// Matches backend DTO for subscribing
+// DTO for subscribing to the newsletter
+export interface NewsletterSubscriptionRequestDto {
+  email: string;
+}
 
-  // Mirrors backend DTO used for listing newsletter subscriptions
+// Mirrors backend DTO used for listing newsletter subscriptions
 export interface NewsletterSubscriptionResponseDto {
   newsletterSubscriptionId: string; // Assuming GUID as string
   email: string;

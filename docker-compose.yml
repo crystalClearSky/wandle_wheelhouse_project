@@ -1,0 +1,33 @@
+# Location: docker-compose.yml
+# Base configuration for services
+
+
+services:
+  # Backend API Service
+  api:
+    container_name: wandle-api
+    image: wandle-wheelhouse-api:latest # Use the image we built
+    restart: unless-stopped
+    ports:
+      # Map host port 8181 to container port 8080 (where Kestrel listens)
+      - "8181:8080"
+    networks:
+      - wandle_network # Connect to custom network
+
+  # Frontend Client Service (Nginx)
+  client:
+    container_name: wandle-client
+    image: wandle-wheelhouse-client:latest # Use the image we built
+    restart: unless-stopped
+    ports:
+      # Map host port 8080 to container port 80 (where Nginx listens)
+      - "8080:80"
+    depends_on:
+      - api # Wait for API service container to start (doesn't guarantee readiness)
+    networks:
+      - wandle_network # Connect to custom network
+
+# Define the custom network
+networks:
+  wandle_network:
+    driver: bridge
