@@ -1,13 +1,13 @@
 // Location: src/contexts/AuthContext.tsx
 
 import React, {
-  createContext,
-  useState,
-  useContext,
-  useEffect,
-  useCallback, // Import useCallback
-  useMemo,     // Import useMemo
-  ReactNode
+    createContext,
+    useState,
+    useContext,
+    useEffect,
+    useCallback,
+    useMemo,
+    ReactNode
 } from 'react';
 import ProfileService from '../services/ProfileService';
 import { UserDetailDto } from '../dto/Users/UserDetailDto';
@@ -16,149 +16,169 @@ import axios from 'axios';
 
 // Define the shape of the context data
 interface AuthContextType {
-token: string | null;
-user: UserDetailDto | null; // Context holds the detailed user info
-isAuthenticated: boolean;
-isLoading: boolean;
-// Login function can accept either type, but internally works towards UserDetailDto
-login: (newToken: string, newUserInfo: UserDetailDto | UserInfoDto) => void;
-logout: () => void;
+    token: string | null;
+    user: UserDetailDto | null;
+    isAuthenticated: boolean;
+    isLoading: boolean; // For initial auth check
+    login: (newToken: string, newUserInfo: UserDetailDto | UserInfoDto) => void;
+    logout: () => void;
+    updateUserContext: (updatedUserInfo: Partial<UserDetailDto>) => void; // <-- For profile updates
+
+    // --- Donation Modal State & Functions ---
+    isDonationModalOpen: boolean;
+    openDonationModal: () => void;
+    closeDonationModal: () => void;
 }
 
-// Create the context - null! assumes provider is always present
-const AuthContext = createContext<AuthContextType>(null!);
+// Create the context
+const AuthContext = createContext<AuthContextType>(null!); // null! assumes provider is always present
 
 // Custom hook for easy access
 export const useAuth = () => {
-const context = useContext(AuthContext);
-if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-}
-return context;
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 };
 
-// Props for the provider
 interface AuthProviderProps {
-children: ReactNode;
+    children: ReactNode;
 }
 
-// AuthProvider component implementation
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-const [token, setToken] = useState<string | null>(null);
-const [user, setUser] = useState<UserDetailDto | null>(null); // State holds UserDetailDto
-const [isLoading, setIsLoading] = useState(true); // For initial load verification
+    const [token, setToken] = useState<string | null>(null);
+    const [user, setUser] = useState<UserDetailDto | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-// Effect Hook for Initial Authentication Verification on load/refresh
-useEffect(() => {
-  const verifyAuthOnLoad = async () => {
-     const storedToken = localStorage.getItem('authToken');
-     const storedUserString = localStorage.getItem('authUser');
+    // --- Donation Modal State ---
+    const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
 
-     if (!storedToken) {
-         console.log("AuthContext: No token found in storage on load.");
-         setIsLoading(false);
-         return;
-     }
+    const openDonationModal = useCallback(() => {
+        console.log("AuthContext: Opening Donation Modal");
+        setIsDonationModalOpen(true);
+    }, []);
 
-     console.log("AuthContext: Token found in storage. Verifying with API...");
+    const closeDonationModal = useCallback(() => {
+        console.log("AuthContext: Closing Donation Modal");
+        setIsDonationModalOpen(false);
+    }, []);
+    // --- End Donation Modal State ---
 
-     // Optimistic load from storage for faster UI, verification will correct if needed
-     if (storedUserString) {
-          try { setUser(JSON.parse(storedUserString)); setToken(storedToken); }
-          catch { localStorage.removeItem('authUser'); setToken(storedToken); /* Only set token */ }
-     } else {
-          setToken(storedToken); // Ensure token is set for interceptor
-     }
+    // Effect Hook for Initial Authentication Verification
+    useEffect(() => {
+        const verifyAuthOnLoad = async () => {
+            const storedToken = localStorage.getItem('authToken');
+            const storedUserString = localStorage.getItem('authUser');
 
-     try {
-         // Verify token by fetching full profile (uses interceptor)
-         const freshProfileData = await ProfileService.getMyProfile(); // Returns UserDetailDto
-         console.log("AuthContext: Token verified via API. Updating state:", freshProfileData);
+            if (!storedToken) {
+                console.log("AuthContext: No token found in storage on load.");
+                setIsLoading(false);
+                return;
+            }
+            console.log("AuthContext: Token found. Verifying...");
 
-         // Update state with fresh data
-         setToken(storedToken);
-         setUser(freshProfileData);
-         localStorage.setItem('authUser', JSON.stringify(freshProfileData)); // Refresh storage
+            // Optimistic load from storage for faster UI
+            if (storedUserString) {
+                try { setUser(JSON.parse(storedUserString)); setToken(storedToken); }
+                catch { localStorage.removeItem('authUser'); setToken(storedToken); }
+            } else {
+                setToken(storedToken); // Set token for interceptor
+            }
 
-     } catch (error: unknown) {
-         console.warn("AuthContext: Token verification failed.", error);
-         let clearSession = false;
-         if (axios.isAxiosError(error) && error.response?.status === 401) {
-             console.log("AuthContext: Invalid/expired token. Clearing state/storage.");
-             clearSession = true;
-         } else {
-             console.error("AuthContext: Non-401 error during token verification:", error);
-             clearSession = true; // Also clear session on other verification errors
-         }
-         if(clearSession) {
-             setToken(null); setUser(null);
-             localStorage.removeItem('authToken'); localStorage.removeItem('authUser');
-         }
-     } finally {
-         setIsLoading(false);
-         console.log("AuthContext: Initial loading/verification complete.");
-     }
-  };
+            try {
+                const freshProfileData = await ProfileService.getMyProfile();
+                console.log("AuthContext: Token verified. Updating state:", freshProfileData);
+                setToken(storedToken); // Confirm token
+                setUser(freshProfileData);
+                localStorage.setItem('authUser', JSON.stringify(freshProfileData));
+            } catch (error: unknown) {
+                console.warn("AuthContext: Token verification failed.", error);
+                let clearSession = false;
+                if (axios.isAxiosError(error) && error.response?.status === 401) {
+                    clearSession = true;
+                } else {
+                    clearSession = true; // Also clear for other verification errors
+                }
+                if (clearSession) {
+                    setToken(null); setUser(null);
+                    localStorage.removeItem('authToken'); localStorage.removeItem('authUser');
+                }
+            } finally {
+                setIsLoading(false);
+                console.log("AuthContext: Initial loading/verification complete.");
+            }
+        };
+        verifyAuthOnLoad();
+    }, []); // Runs once on mount
 
-  verifyAuthOnLoad();
-}, []); // Empty dependency array: runs only once on mount
+    // LOGIN Function
+    const login = useCallback((newToken: string, newUserInfo: UserDetailDto | UserInfoDto) => {
+        console.log("AuthContext: login() called.", newUserInfo);
+        let detailedUser: UserDetailDto;
+        if ('id' in newUserInfo && 'emailConfirmed' in newUserInfo) {
+            detailedUser = newUserInfo as UserDetailDto;
+        } else {
+            const basicInfo = newUserInfo as UserInfoDto;
+            detailedUser = {
+                id: basicInfo.userId, email: basicInfo.email, firstName: basicInfo.firstName,
+                lastName: basicInfo.lastName, roles: basicInfo.roles, avatarUrl: basicInfo.avatarUrl,
+                phoneNumber: null, emailConfirmed: false, lockoutEnabled: false,
+                lockoutEnd: null, addressLine1: null, addressLine2: null,
+                city: null, postCode: null, country: null,
+            };
+        }
+        setToken(newToken);
+        setUser(detailedUser);
+        localStorage.setItem('authToken', newToken);
+        localStorage.setItem('authUser', JSON.stringify(detailedUser));
+    }, []);
 
-// LOGIN Function (Memoized)
-const login = useCallback((newToken: string, newUserInfo: UserDetailDto | UserInfoDto) => {
-  console.log("AuthContext: login() called.", newUserInfo);
+    // LOGOUT Function
+    const logout = useCallback(() => {
+        console.log("AuthContext: logout() called.");
+        setToken(null); setUser(null);
+        localStorage.removeItem('authToken'); localStorage.removeItem('authUser');
+        setIsDonationModalOpen(false); // Also close donation modal on logout
+    }, []);
 
-  // Ensure we are working with the UserDetailDto structure for state/storage
-  let detailedUser: UserDetailDto;
-  if ('id' in newUserInfo && 'emailConfirmed' in newUserInfo) { // Check for fields unique to UserDetailDto
-      detailedUser = newUserInfo as UserDetailDto;
-  } else {
-      // Map UserInfoDto to UserDetailDto, setting unknown fields appropriately
-      const basicInfo = newUserInfo as UserInfoDto;
-      detailedUser = {
-          id: basicInfo.userId, email: basicInfo.email, firstName: basicInfo.firstName,
-          lastName: basicInfo.lastName, roles: basicInfo.roles, avatarUrl: basicInfo.avatarUrl,
-          // Initialize other fields - these will be updated on next page load via verifyAuthOnLoad
-          phoneNumber: null, emailConfirmed: false, // Assume false until verified
-          lockoutEnabled: false, lockoutEnd: null, addressLine1: null,
-          addressLine2: null, city: null, postCode: null, country: null,
-      };
-      console.log("AuthContext: Mapped UserInfoDto to UserDetailDto for state.", detailedUser);
-  }
+    // --- NEW: Function to update user context (e.g., after profile edit/avatar change) ---
+    const updateUserContext = useCallback((updatedUserInfo: Partial<UserDetailDto>) => {
+        setUser(prevUser => {
+            if (!prevUser) {
+                console.warn("AuthContext: updateUserContext called but no previous user state found.");
+                return null;
+            }
+            const newUserState = { ...prevUser, ...updatedUserInfo };
+            localStorage.setItem('authUser', JSON.stringify(newUserState));
+            console.log("AuthContext: User context updated by updateUserContext:", newUserState);
+            return newUserState;
+        });
+    }, []);
+    // --- End NEW Function ---
 
-  setToken(newToken);
-  setUser(detailedUser);
-  localStorage.setItem('authToken', newToken);
-  localStorage.setItem('authUser', JSON.stringify(detailedUser));
-}, []); // No dependencies needed as it only uses args and sets state
+    // Context Value (Memoized)
+    const value = useMemo(() => ({
+        token,
+        user,
+        isAuthenticated: !isLoading && !!token && !!user,
+        isLoading,
+        login,
+        logout,
+        updateUserContext,        // <-- Add to value
+        isDonationModalOpen,      // <-- Add to value
+        openDonationModal,        // <-- Add to value
+        closeDonationModal,       // <-- Add to value
+    }), [
+        token, user, isLoading, login, logout, updateUserContext, // <-- Add updateUserContext
+        isDonationModalOpen, openDonationModal, closeDonationModal // <-- Add modal state and functions
+    ]);
 
-
-// LOGOUT Function (Memoized)
-const logout = useCallback(() => {
-  console.log("AuthContext: logout() called.");
-  setToken(null);
-  setUser(null);
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('authUser');
-}, []); // No dependencies needed
-
-
-// Context Value (Memoized)
-// Including login/logout in dependencies is optional now they use useCallback,
-// but kept for explicit dependency tracking.
-const value = useMemo(() => ({
-    token,
-    user,
-    isAuthenticated: !isLoading && !!token && !!user,
-    isLoading,
-    login, // Provide the memoized login function
-    logout, // Provide the memoized logout function
-}), [token, user, isLoading, login, logout]);
-
-
-// Provider component rendering children
-return (
-    <AuthContext.Provider value={value}>
-        {children}
-    </AuthContext.Provider>
-);
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
+
+// export { AuthContext };

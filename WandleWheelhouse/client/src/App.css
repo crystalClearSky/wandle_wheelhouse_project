@@ -5,6 +5,9 @@
   text-align: center;
   
 }
+
+
+
 @media (max-width: 1000px) {
   /* Styles applied when the screen width is 768px or wider */
   #root {

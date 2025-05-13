@@ -17,6 +17,7 @@ services:
       # Mount a host directory into the container for the SQLite DB
       # Creates a 'Data' folder in your solution root on the host if it doesn't exist
       - ./Data:/app/Data # Persist SQLite DB outside the container
+      - ./Uploads:/app/wwwroot/uploads          # <-- ADD THIS LINE for persistent uploads
 
   client:
     environment:

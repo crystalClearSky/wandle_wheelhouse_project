@@ -24,6 +24,8 @@ public class ApplicationDbContext : IdentityDbContext<User>
     public DbSet<Subscription> Subscriptions { get; set; } = null!;
     public DbSet<NewsletterSubscription> NewsletterSubscriptions { get; set; } = null!;
     public DbSet<BlogArticle> BlogArticles { get; set; } = null!;
+    // At the top with other DbSets
+    public DbSet<ContactInquiry> ContactInquiries { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -62,12 +64,20 @@ public class ApplicationDbContext : IdentityDbContext<User>
             .HasForeignKey(ba => ba.AuthorId)
             .OnDelete(DeleteBehavior.Restrict); // Prevent deleting a user if they have articles
 
-         builder.Entity<NewsletterSubscription>()
-            .HasOne(ns => ns.User)
-            .WithMany() // Assuming user can have only one newsletter sub linked (or change if needed)
-            .HasForeignKey(ns => ns.UserId)
-            .IsRequired(false) // Allow anonymous newsletter subs
-            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<NewsletterSubscription>()
+           .HasOne(ns => ns.User)
+           .WithMany() // Assuming user can have only one newsletter sub linked (or change if needed)
+           .HasForeignKey(ns => ns.UserId)
+           .IsRequired(false) // Allow anonymous newsletter subs
+           .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<ContactInquiry>(entity =>
+            {
+                entity.HasIndex(ci => ci.SubmittedAt);
+                entity.HasIndex(ci => ci.Type);
+                entity.HasIndex(ci => ci.IsArchived);
+                entity.Property(ci => ci.Type).HasConversion<string>(); // Store enum as string
+            });
 
         // Seed initial Roles (Administrator, Editor, Member)
         SeedRoles(builder);
@@ -75,7 +85,7 @@ public class ApplicationDbContext : IdentityDbContext<User>
 
     private static void SeedRoles(ModelBuilder builder)
     {
-        string adminRoleId = "2c5e174e-3b0e-446f-86af-483d56fd7210";;
+        string adminRoleId = "2c5e174e-3b0e-446f-86af-483d56fd7210"; ;
         string editorRoleId = "a1d5e7a6-1b9e-4b5f-9c8d-5e4f7e8a1b2c";
         string memberRoleId = "b2e8f9b5-2c8d-4e6f-8a7b-6d5c4e3b2a1d";
 

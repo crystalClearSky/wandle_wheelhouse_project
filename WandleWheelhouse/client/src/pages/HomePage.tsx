@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import wheelhouseImage from '../assets/homepage_headline_image.jpg';
 import Button from '../components/ui/Button';
 import BlogCard from '../components/blog/BlogCard';
 import BlogService from '../services/BlogService';
@@ -51,7 +52,7 @@ const HomePage: React.FC = () => {
         <div
           className="min-h-screen flex items-center justify-center p-8 md:p-12 bg-cover bg-center relative"
           style={{
-            backgroundImage: `url('https://wandlevalleypark.co.uk/wp-content/uploads/2016/09/Featured-Image-Wheelhouse.jpg')`,
+            backgroundImage: `url(${wheelhouseImage})`,
           }}
         >
           <div className="absolute inset-0 bg-black/50"></div>

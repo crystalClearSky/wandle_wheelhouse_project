@@ -18,6 +18,7 @@ public class UnitOfWork : IUnitOfWork
     private ISubscriptionRepository? _subscriptions;
     private INewsletterSubscriptionRepository? _newsletterSubscriptions;
     private IBlogArticleRepository? _blogArticles;
+    private ContactInquiryRepository? _contactInquiries; // <-- Add private field
 
 
     public UnitOfWork(ApplicationDbContext context)
@@ -30,6 +31,7 @@ public class UnitOfWork : IUnitOfWork
     public ISubscriptionRepository Subscriptions => _subscriptions ??= new SubscriptionRepository(_context);
     public INewsletterSubscriptionRepository NewsletterSubscriptions => _newsletterSubscriptions ??= new NewsletterSubscriptionRepository(_context);
     public IBlogArticleRepository BlogArticles => _blogArticles ??= new BlogArticleRepository(_context);
+    public IContactInquiryRepository ContactInquiries => _contactInquiries ??= new ContactInquiryRepository(_context); // <-- Initialize property
     // Add:
     public ApplicationDbContext Context => _context;
 

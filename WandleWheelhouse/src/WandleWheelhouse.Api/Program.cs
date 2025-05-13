@@ -107,7 +107,7 @@ builder.Services.AddAuthorization(options =>
 
 // CORS Configuration (Global)
 // Inside Program.cs -> Service Configuration section
-
+// LOCAL //
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowWebApp", // Name this policy
@@ -123,6 +123,8 @@ builder.Services.AddCors(options =>
                 // Keep existing ones if needed (e.g., Vite default, Swagger)
                 allowedOrigins.Add("http://localhost:5173");
                 allowedOrigins.Add("http://127.0.0.1:5173");
+                allowedOrigins.Add("http://localhost:8080"); // <-- ADD THIS (for client container)
+                allowedOrigins.Add("http://127.0.0.1:8080"); // <-- AND THIS
                 allowedOrigins.Add($"https://localhost:{builder.Configuration.GetValue<int>("HttpsPort", 7136)}");
                 allowedOrigins.Add($"http://localhost:{builder.Configuration.GetValue<int>("HttpPort", 5041)}");
             }
@@ -138,6 +140,35 @@ builder.Services.AddCors(options =>
                          .AllowCredentials(); // Allow credentials (needed for auth)
         });
 });
+/////
+
+// Docker //
+// builder.Services.AddCors(options =>
+// {
+//     options.AddPolicy("AllowWebApp",
+//         policyBuilder =>
+//         {
+//             List<string> allowedOrigins = new List<string>();
+//             if (isDevelopment)
+//             {
+//                 allowedOrigins.Add("http://localhost:5174"); // Old Vite dev server
+//                 allowedOrigins.Add("http://127.0.0.1:5174");
+//                 allowedOrigins.Add("http://localhost:8080"); // <-- ADD THIS (for client container)
+//                 allowedOrigins.Add("http://127.0.0.1:8080"); // <-- AND THIS
+
+//                 // Keep Swagger origins
+//                 allowedOrigins.Add($"https://localhost:{builder.Configuration.GetValue<int>("HttpsPort", 7136)}");
+//                 allowedOrigins.Add($"http://localhost:{builder.Configuration.GetValue<int>("HttpPort", 5041)}");
+//             }
+//             // ... rest of your CORS config ...
+//             policyBuilder.WithOrigins(allowedOrigins.ToArray())
+//                          .AllowAnyHeader()
+//                          .AllowAnyMethod()
+//                          .AllowCredentials();
+//         });
+// });
+//////
+
 // Controller Services
 builder.Services.AddControllers();
 
@@ -294,15 +325,8 @@ app.UseStaticFiles();
 var uploadsPath = Path.Combine(app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"), "uploads");
 if (!Directory.Exists(uploadsPath))
 {
-    try
-    {
-        Directory.CreateDirectory(uploadsPath);
-        Console.WriteLine($"Created directory: {uploadsPath}");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Failed to create directory {uploadsPath}: {ex.Message}");
-    }
+    try { Directory.CreateDirectory(uploadsPath); app.Logger.LogInformation("Created directory: {UploadsPath}", uploadsPath); }
+    catch (Exception ex) { app.Logger.LogError(ex, "Failed to create directory {UploadsPath}", uploadsPath); }
 }
 
 app.UseStaticFiles(new StaticFileOptions

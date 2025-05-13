@@ -10,6 +10,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import BlogPostCreatePage from './pages/admin/BlogPostCreatePage'; // <-- Import Create Page
+import ContactPage from './pages/ContactPage';
 import BlogPostEditPage from './pages/admin/BlogPostEditPage'; // <-- Added this import
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route path="mission" element={<MissionPage />} />
           <Route path="blog" element={<BlogPage />} />
           <Route path="blog/:slug" element={<FullBlogArticlePage />} />
+          <Route path="contact" element={<ContactPage />} />
           {/* Example placeholder */}
           {/* <Route path="shop" element={<div>Shop Placeholder (Coming Soon)</div>} /> */}
 

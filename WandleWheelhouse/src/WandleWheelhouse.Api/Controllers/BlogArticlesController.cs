@@ -306,7 +306,74 @@ namespace WandleWheelhouse.Api.Controllers
          }
 
         // --- Private Helper Methods ---
-        private async Task<IActionResult> SetPublishStatus(Guid id, bool publish) { /* ... existing logic ... */ return NoContent(); }
+        // Inside BlogArticlesController.cs
+        private async Task<IActionResult> SetPublishStatus(Guid id, bool publish)
+        {
+            // User.FindFirstValue will return null if the claim doesn't exist,
+            // but [Authorize] attribute on the endpoint should ensure an authenticated user.
+            // For robustness, we could add a null check here if really paranoid,
+            // but typically for an authorized endpoint, NameIdentifier will be present.
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!; // Assert not null as user is authorized
+
+            string action = publish ? "Publishing" : "Unpublishing";
+            _logger.LogInformation("User {UserId} attempting {Action} for article {ArticleId}", userId, action, id);
+
+            var article = await _unitOfWork.BlogArticles.GetByIdAsync(id);
+            if (article == null)
+            {
+                _logger.LogWarning("Article {ArticleId} not found for {Action} by User {UserId}.", id, action, userId);
+                return NotFound();
+            }
+
+            // The [Authorize(Roles = "Administrator,Editor")] attribute on the calling actions
+            // already ensures the user has one of these roles.
+            // If you needed finer-grained control (e.g., Editor can only publish THEIR OWN posts),
+            // you would add a check here like:
+            // bool isAdmin = User.IsInRole("Administrator");
+            // bool isAuthor = article.AuthorId == userId;
+            // if (!isAdmin && !isAuthor) { return Forbid(); }
+
+            if (article.IsPublished == publish)
+            {
+                _logger.LogInformation("Article {ArticleId} is already {Status}, no action taken by User {UserId}.", id, publish ? "published" : "unpublished", userId);
+                return NoContent();
+            }
+
+            article.IsPublished = publish;
+            article.LastUpdatedDate = DateTime.UtcNow;
+
+            // Only set PublicationDate if it's being published AND it wasn't set before (i.e., first publish)
+            // Assuming PublicationDate is nullable or DateTime.MinValue indicates not yet set.
+            // If PublicationDate is not nullable and defaults to UtcNow on creation, this logic might need adjustment.
+            // Let's assume your model's PublicationDate allows us to check if it was truly "never published before".
+            // For simplicity, let's use a common pattern: if we're publishing and it was a draft with a very old/default date.
+            // Or, if PublicationDate tracks the *latest* publish event, then always set it.
+            // Sticking to "set on first true publish":
+            if (publish && (article.PublicationDate == DateTime.MinValue || article.PublicationDate == null)) // Check for default/null
+            {
+                article.PublicationDate = DateTime.UtcNow;
+            }
+            // If unpublishing, PublicationDate usually remains.
+
+            // _unitOfWork.BlogArticles.Update(article); // EF Core tracks changes on entities retrieved from context.
+                                                      // Explicit .Update() is usually for disconnected entities.
+            try
+            {
+                await _unitOfWork.CompleteAsync();
+                _logger.LogInformation("Article {ArticleId} {Action} successful by User {UserId}.", id, publish ? "published" : "unpublished", userId);
+                return NoContent();
+            }
+            catch (DbUpdateConcurrencyException dbEx)
+            {
+                _logger.LogError(dbEx, "Concurrency error while setting publish status for article {ArticleId}. User {UserId}.", id, userId);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Could not update the article due to a data conflict. Please try again.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error setting publish status for article {ArticleId}. User {UserId}.", id, userId);
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while updating the article's publish status.");
+            }
+        }
         private static string GenerateSlug(string phrase) { /* ... existing logic from previous response ... */ return "generated-slug"; }
         private static bool IsValidSlug(string slug) { /* ... existing logic ... */ return true; }
 

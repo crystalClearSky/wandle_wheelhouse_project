@@ -77,4 +77,8 @@ body {
   @apply font-mono bg-gray-800 text-white block p-4 rounded overflow-x-auto text-sm my-4;
 }
 
+/* .text-outline {
+  
+  text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.5);
+} */
 /* --- End Lexical Editor Theme Styles --- */

@@ -4,10 +4,11 @@ import axios from "axios";
 
 // 1. Get Base URL from environment variables (Vite convention)
 // Access variables defined in .env files (e.g., .env.development)
+const connection = `${import.meta.env.VITE_API_ORIGIN}/api`
 const API_BASE_URL = 
-// "api";
-import.meta.env.VITE_API_BASE_URL || "https://localhost:7136/api"; // Fallback URL
-console.log(`API Base URL set to: ${API_BASE_URL}`); // Log the base URL being used
+// "/api";
+connection || "https://localhost:7136/api"; // Fallback URL
+// console.log(`API Base URL set to: ${API_BASE_URL}`); // Log the base URL being used
 
 // 2. Create a reusable Axios instance with default settings
 const apiClient = axios.create({

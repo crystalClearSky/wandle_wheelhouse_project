@@ -14,8 +14,9 @@ public interface IUnitOfWork : IDisposable
     ISubscriptionRepository Subscriptions { get; }
     INewsletterSubscriptionRepository NewsletterSubscriptions { get; }
     IBlogArticleRepository BlogArticles { get; }
+    IContactInquiryRepository ContactInquiries { get; } // <-- ADD THIS LINE
     // Add other repositories as needed (e.g., IUserRepository if you create one)
-     // Add:
+    // Add:
     ApplicationDbContext Context { get; }
     Task<int> CompleteAsync(); // Save changes
 }

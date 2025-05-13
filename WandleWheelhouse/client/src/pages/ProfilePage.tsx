@@ -36,8 +36,12 @@ const ProfilePage: React.FC = () => {
     country: "",
   });
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [profileUpdateError, setProfileUpdateError] = useState<string | null>(null);
-  const [profileUpdateSuccess, setProfileUpdateSuccess] = useState<string | null>(null);
+  const [profileUpdateError, setProfileUpdateError] = useState<string | null>(
+    null
+  );
+  const [profileUpdateSuccess, setProfileUpdateSuccess] = useState<
+    string | null
+  >(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -72,12 +76,15 @@ const ProfilePage: React.FC = () => {
         setContrast(100);
         setZoom(1);
         setCrop({ x: 0, y: 0 });
+        if (imageSrc) {
+          URL.revokeObjectURL(imageSrc);
+        }
         setImageSrc(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isEditing]);
+  }, [isEditing, imageSrc]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     setUploadError(null);
@@ -88,21 +95,49 @@ const ProfilePage: React.FC = () => {
       if (file.size > 5 * 1024 * 1024) {
         setUploadError("File is too large (Max 5MB).");
         setSelectedFile(null);
+        if (imageSrc) {
+          URL.revokeObjectURL(imageSrc);
+        }
         setImageSrc(null);
         event.target.value = "";
         return;
       }
-      setSelectedFile(file);
-      setImageSrc(URL.createObjectURL(file));
+      // Validate image by attempting to load it
+      const newImageSrc = URL.createObjectURL(file);
+      const img = new Image();
+      img.src = newImageSrc;
+      img.onload = () => {
+        setSelectedFile(file);
+        if (imageSrc) {
+          URL.revokeObjectURL(imageSrc);
+        }
+        setImageSrc(newImageSrc);
+      };
+      img.onerror = () => {
+        setUploadError("Invalid image file or failed to load image.");
+        setSelectedFile(null);
+        if (imageSrc) {
+          URL.revokeObjectURL(imageSrc);
+        }
+        setImageSrc(null);
+        event.target.value = "";
+        URL.revokeObjectURL(newImageSrc);
+      };
     } else {
       setSelectedFile(null);
+      if (imageSrc) {
+        URL.revokeObjectURL(imageSrc);
+      }
       setImageSrc(null);
     }
   };
 
-  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  }, []);
+  const onCropComplete = useCallback(
+    (_croppedArea: Area, croppedAreaPixels: Area) => {
+      setCroppedAreaPixels(croppedAreaPixels);
+    },
+    []
+  );
 
   const getCroppedImg = async (
     imageSrc: string,
@@ -110,31 +145,48 @@ const ProfilePage: React.FC = () => {
     brightness: number,
     contrast: number
   ): Promise<Blob | null> => {
-    const image = new Image();
-    image.src = imageSrc;
-    image.crossOrigin = "anonymous";
-    await new Promise((resolve) => (image.onload = resolve));
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
-    ctx.filter = `brightness(${brightness}%) contrast(${contrast}%)`;
-    ctx.drawImage(
-      image,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
-      0,
-      0,
-      pixelCrop.width,
-      pixelCrop.height
-    );
-    return new Promise<Blob>((resolve) => {
-      canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.9);
-    });
+    try {
+      const image = new Image();
+      image.src = imageSrc;
+      image.crossOrigin = "anonymous";
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => {
+          console.error("Failed to load image for cropping:", imageSrc);
+          reject(new Error("Image loading failed"));
+        };
+      });
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        console.error("Canvas element not found");
+        return null;
+      }
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        console.error("Failed to get 2D context for canvas");
+        return null;
+      }
+      canvas.width = pixelCrop.width;
+      canvas.height = pixelCrop.height;
+      ctx.filter = `brightness(${brightness}%) contrast(${contrast}%)`;
+      ctx.drawImage(
+        image,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        pixelCrop.width,
+        pixelCrop.height
+      );
+      return new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.9);
+      });
+    } catch (err) {
+      console.error("Error in getCroppedImg:", err);
+      return null;
+    }
   };
 
   const handleAvatarUpload = async (event: FormEvent) => {
@@ -160,13 +212,18 @@ const ProfilePage: React.FC = () => {
       const response = await ProfileService.uploadAvatar(fileToUpload);
       setUploadSuccess("Avatar updated successfully!");
       setSelectedFile(null);
+      if (imageSrc) {
+        URL.revokeObjectURL(imageSrc);
+      }
       setImageSrc(null);
       setIsEditing(false);
       setBrightness(100);
       setContrast(100);
       setZoom(1);
       setCrop({ x: 0, y: 0 });
-      const fileInput = document.getElementById("avatar-upload") as HTMLInputElement;
+      const fileInput = document.getElementById(
+        "avatar-upload"
+      ) as HTMLInputElement;
       if (fileInput) fileInput.value = "";
       const currentToken = localStorage.getItem("authToken");
       if (user && currentToken) {
@@ -438,6 +495,9 @@ const ProfilePage: React.FC = () => {
                       onZoomChange={setZoom}
                       onCropComplete={onCropComplete}
                       objectFit="contain"
+                      onMediaLoaded={() =>
+                        console.log("Cropper image loaded successfully")
+                      }
                     />
                   </div>
                   <div className="space-y-4">
@@ -477,6 +537,9 @@ const ProfilePage: React.FC = () => {
                         setContrast(100);
                         setZoom(1);
                         setCrop({ x: 0, y: 0 });
+                        if (imageSrc) {
+                          URL.revokeObjectURL(imageSrc);
+                        }
                         setImageSrc(null);
                       }}
                       variant="secondary"
