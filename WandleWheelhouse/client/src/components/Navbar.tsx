@@ -149,7 +149,7 @@ const Navbar: React.FC = () => {
             className={`text-lg font-semibold ${
               isFixedNavbarRoute || isScrolled
                 ? "text-gray-800 hover:text-indigo-600"
-                : "text-white  hover:text-black text-outline"
+                : "text-white hover:text-black text-outline"
             } transition-all duration-300 px-3 py-2 rounded-md hover:bg-indigo-50`}
           >
             Mission
@@ -163,6 +163,16 @@ const Navbar: React.FC = () => {
             } transition-all duration-300 px-3 py-2 rounded-md hover:bg-indigo-50`}
           >
             Blog
+          </Link>
+          <Link
+            to="/contact"
+            className={`text-lg font-semibold ${
+              isFixedNavbarRoute || isScrolled
+                ? "text-gray-800 hover:text-indigo-600"
+                : "text-white hover:text-black text-outline"
+            } transition-all duration-300 px-3 py-2 rounded-md hover:bg-indigo-50`}
+          >
+            Support us
           </Link>
           {isLoading && (
             <div className="flex space-x-4">
@@ -353,6 +363,17 @@ const Navbar: React.FC = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Blog
+                </Link>
+                <Link
+                  to="/contact"
+                  className={`block px-4 py-3 text-lg font-medium ${
+                    isFixedNavbarRoute || isScrolled
+                      ? "text-gray-800 hover:text-indigo-600"
+                      : "text-gray-800 hover:text-indigo-600"
+                  } hover:bg-indigo-50 rounded-md`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Support
                 </Link>
                 <div className="border-t border-gray-200 my-2"></div>
                 {!isLoading && !isAuthenticated && (
