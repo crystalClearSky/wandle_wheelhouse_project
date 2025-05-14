@@ -1,4 +1,5 @@
 import React, { useState, FormEvent, useMemo } from 'react';
+import Modal from '../components/ui/Modal';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import DonationService from '../services/DonationService';
@@ -6,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { PaymentMethod } from '../dto/Donations/PaymentMethodEnum';
 import { DonationRequestDto } from '../dto/Donations/DonationRequestDto';
 import { PaymentStatus } from '../dto/Donations/PaymentStatusEnum';
+import { ExclamationCircleIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 interface DonationModalProps {
   isOpen: boolean;
@@ -72,7 +74,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose })
       }
       setTimeout(() => {
         handleClose();
-      }, 2500);
+      }, 1500);
     } catch (err: unknown) {
       let message = 'An unexpected error occurred.';
       if (err instanceof Error) message = err.message;
@@ -95,173 +97,196 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose })
     onRequestClose();
   };
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
-  };
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-md z-50"
-      onClick={handleBackdropClick}
+    <Modal
+      isOpen={isOpen}
+      onRequestClose={handleClose}
+      title="Make a Donation"
+      contentLabel="Donation Modal"
     >
-      <div
-        className="bg-white/95 backdrop-blur-md rounded-xl shadow-xl p-8 w-full max-w-md mx-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Make a Donation</h2>
-
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Error Alert */}
         {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4">
-            {error}
+          <div
+            className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg flex items-center space-x-2"
+            role="alert"
+          >
+            <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
+            <span className="block sm:inline">{error}</span>
           </div>
         )}
+        {/* Success Alert */}
         {successMessage && (
-          <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-4">
-            {successMessage}
+          <div
+            className="bg-green-50 border-l-4 border-green-500 text-green-700 px-4 py-3 rounded-lg flex items-center space-x-2"
+            role="alert"
+          >
+            <CheckCircleIcon className="h-6 w-6 text-green-500" />
+            <span className="block sm:inline">{successMessage}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          {/* Amount Selection */}
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">Select Donation Amount (£)</label>
-            <div className="flex flex-wrap gap-2">
-              {donationAmounts.map((presetAmount) => (
-                <Button
-                  key={presetAmount}
-                  type="button"
-                  variant={amount === presetAmount ? 'primary' : 'secondary'}
-                  className={`py-2 px-4 rounded-lg transition-all duration-300 ${
-                    amount === presetAmount ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                  }`}
-                  onClick={() => handleAmountChange(presetAmount)}
-                  disabled={isLoading}
-                >
-                  {presetAmount}
-                </Button>
-              ))}
+        {/* Amount Selection */}
+        <div>
+          <label className="block text-gray-700 font-medium mb-2">Select Donation Amount (£)</label>
+          <div className="flex flex-wrap gap-2">
+            {donationAmounts.map((presetAmount) => (
               <Button
-                key="custom"
+                key={presetAmount}
                 type="button"
-                variant={showCustomAmountInput ? 'primary' : 'secondary'}
-                className={`py-2 px-4 rounded-lg transition-all duration-300 ${
-                  showCustomAmountInput ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                variant={amount === presetAmount ? 'primary' : 'secondary'}
+                className={`py-3 px-4 rounded-lg transition-all duration-300 hover:scale-105 ${
+                  amount === presetAmount ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
                 }`}
-                onClick={() => handleAmountChange('custom')}
+                onClick={() => handleAmountChange(presetAmount)}
                 disabled={isLoading}
               >
-                Other
+                {presetAmount}
               </Button>
-            </div>
-            {showCustomAmountInput && (
-              <Input
-                id="custom-amount"
-                type="number"
-                min="1"
-                step="0.01"
-                placeholder="Enter amount"
-                value={customAmount}
-                onChange={(e) => setCustomAmount(e.target.value)}
-                className="mt-2 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                required
-                disabled={isLoading}
-              />
-            )}
-          </div>
-
-          {/* Payment Method */}
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">Payment Method</label>
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                  value={PaymentMethod.Worldpay}
-                  checked={selectedMethod === PaymentMethod.Worldpay}
-                  onChange={() => setSelectedMethod(PaymentMethod.Worldpay)}
-                  disabled={isLoading}
-                />
-                <span className="ml-2 text-gray-700">Worldpay</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                  value={PaymentMethod.PayPal}
-                  checked={selectedMethod === PaymentMethod.PayPal}
-                  onChange={() => setSelectedMethod(PaymentMethod.PayPal)}
-                  disabled={isLoading}
-                />
-                <span className="ml-2 text-gray-700">PayPal</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Anonymous Donor Fields */}
-          {!isAuthenticated && (
-            <>
-              <hr className="my-4" />
-              <p className="text-sm text-gray-600 mb-3">Please provide your details (required for anonymous donation):</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
-                <Input
-                  label="First Name"
-                  id="anon-firstName"
-                  value={anonFirstName}
-                  onChange={(e) => setAnonFirstName(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  disabled={isLoading}
-                />
-                <Input
-                  label="Last Name"
-                  id="anon-lastName"
-                  value={anonLastName}
-                  onChange={(e) => setAnonLastName(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  disabled={isLoading}
-                />
-              </div>
-              <Input
-                label="Email Address"
-                id="anon-email"
-                type="email"
-                value={anonEmail}
-                onChange={(e) => setAnonEmail(e.target.value)}
-                className="mt-4 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                required
-                disabled={isLoading}
-              />
-            </>
-          )}
-
-          {/* Submit and Cancel Buttons */}
-          <div className="flex justify-end space-x-4 mt-6">
+            ))}
             <Button
+              key="custom"
               type="button"
-              onClick={handleClose}
-              className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all duration-300"
+              variant={showCustomAmountInput ? 'primary' : 'secondary'}
+              className={`py-3 px-4 rounded-lg transition-all duration-300 hover:scale-105 ${
+                showCustomAmountInput ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+              onClick={() => handleAmountChange('custom')}
               disabled={isLoading}
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-300"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Processing...' : `Donate £${showCustomAmountInput ? Number(customAmount).toFixed(2) : Number(amount).toFixed(2)}`}
+              Other
             </Button>
           </div>
-        </form>
-      </div>
-    </div>
+          {showCustomAmountInput && (
+            <Input
+              id="custom-amount"
+              type="number"
+              min="1"
+              step="0.01"
+              placeholder="Enter amount"
+              value={customAmount}
+              onChange={(e) => setCustomAmount(e.target.value)}
+              className="mt-4 w-full border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg"
+              required
+              disabled={isLoading}
+            />
+          )}
+        </div>
+
+        {/* Payment Method */}
+        <div>
+          <label className="block text-gray-700 font-medium mb-2">Payment Method</label>
+          <div className="space-y-2">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="paymentMethod"
+                className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                value={PaymentMethod.Worldpay}
+                checked={selectedMethod === PaymentMethod.Worldpay}
+                onChange={() => setSelectedMethod(PaymentMethod.Worldpay)}
+                disabled={isLoading}
+              />
+              <span className="ml-2 text-gray-700">Worldpay</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="paymentMethod"
+                className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                value={PaymentMethod.PayPal}
+                checked={selectedMethod === PaymentMethod.PayPal}
+                onChange={() => setSelectedMethod(PaymentMethod.PayPal)}
+                disabled={isLoading}
+              />
+              <span className="ml-2 text-gray-700">PayPal</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Anonymous Donor Fields */}
+        {!isAuthenticated && (
+          <>
+            <hr className="my-4" />
+            <p className="text-sm text-gray-600 mb-3">Please provide your details (required for anonymous donation):</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
+              <Input
+                label="First Name"
+                id="anon-firstName"
+                value={anonFirstName}
+                onChange={(e) => setAnonFirstName(e.target.value)}
+                className="w-full border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg"
+                disabled={isLoading}
+              />
+              <Input
+                label="Last Name"
+                id="anon-lastName"
+                value={anonLastName}
+                onChange={(e) => setAnonLastName(e.target.value)}
+                className="w-full border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg"
+                disabled={isLoading}
+              />
+            </div>
+            <Input
+              label="Email Address"
+              id="anon-email"
+              type="email"
+              value={anonEmail}
+              onChange={(e) => setAnonEmail(e.target.value)}
+              className="w-full border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg"
+              required
+              disabled={isLoading}
+            />
+          </>
+        )}
+
+        {/* Submit and Cancel Buttons */}
+        <div className="mt-6 flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
+          <Button
+            type="button"
+            onClick={handleClose}
+            className="w-full py-3 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all duration-300 hover:scale-105"
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-full py-3 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-300 hover:scale-105 flex items-center justify-center"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <svg
+                  className="animate-spin h-5 w-5 mr-2 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              `Donate £${showCustomAmountInput ? Number(customAmount).toFixed(2) : Number(amount).toFixed(2)}`
+            )}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 

@@ -349,7 +349,7 @@ namespace WandleWheelhouse.Api.Controllers
             // For simplicity, let's use a common pattern: if we're publishing and it was a draft with a very old/default date.
             // Or, if PublicationDate tracks the *latest* publish event, then always set it.
             // Sticking to "set on first true publish":
-            if (publish && (article.PublicationDate == DateTime.MinValue || article.PublicationDate == null)) // Check for default/null
+            if (publish && article.PublicationDate == DateTime.MinValue) // Since PublicationDate is not nullable
             {
                 article.PublicationDate = DateTime.UtcNow;
             }

@@ -1,10 +1,10 @@
-import React, { useState, FormEvent } from 'react';
-import Modal from '../components/ui/Modal';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
-import { useAuth } from '../contexts/AuthContext';
-import AuthService from '../services/AuthService';
-import { ExclamationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import React, { FormEvent, useState } from "react";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import Modal from "../components/ui/Modal";
+import { useAuth } from "../contexts/AuthContext";
+import AuthService from "../services/AuthService";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -12,9 +12,13 @@ interface LoginModalProps {
   onSwitchToRegister?: () => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onRequestClose, onSwitchToRegister }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+const LoginModal: React.FC<LoginModalProps> = ({
+  isOpen,
+  onRequestClose,
+  onSwitchToRegister,
+}) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -31,16 +35,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onRequestClose, onSwitc
       if (response.token && response.userInfo) {
         login(response.token, response.userInfo);
         onRequestClose();
-        setEmail('');
-        setPassword('');
+        setEmail("");
+        setPassword("");
       } else {
-        setError(response.message || 'Login failed: Unexpected response.');
+        setError(response.message || "Login failed: Unexpected response.");
       }
     } catch (err: unknown) {
-      let message = 'An unexpected error occurred during login.';
+      let message = "An unexpected error occurred during login.";
       if (err instanceof Error) {
         message = err.message;
-      } else if (typeof err === 'string') {
+      } else if (typeof err === "string") {
         message = err;
       }
       setError(message);
@@ -52,8 +56,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onRequestClose, onSwitc
   const handleClose = () => {
     setError(null);
     setIsLoading(false);
-    setEmail('');
-    setPassword('');
+    setEmail("");
+    setPassword("");
     onRequestClose();
   };
 
@@ -63,7 +67,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onRequestClose, onSwitc
       onRequestClose={handleClose}
       title="Log In to Your Account"
     >
-      <div className="relative bg-white rounded-xl sm:p-4 max-w-lg w-full mx-4 sm:mx-auto">
+      <div className="relative bg-white rounded-xl sm:p-4 max-w-lg w-full mx-0 sm:mx-auto">
         {/* Close Button */}
         <button
           onClick={handleClose}
@@ -82,7 +86,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onRequestClose, onSwitc
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Error Alert */}
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg flex items-center space-x-2" role="alert">
+            <div
+              className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg flex items-center space-x-2"
+              role="alert"
+            >
               <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
               <span className="block sm:inline">{error}</span>
             </div>
@@ -148,7 +155,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onRequestClose, onSwitc
                   ></path>
                 </svg>
               ) : null}
-              {isLoading ? 'Logging In...' : 'Log In'}
+              {isLoading ? "Logging In..." : "Log In"}
             </Button>
           </div>
         </form>
@@ -157,7 +164,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onRequestClose, onSwitc
         <div className="text-sm mt-6 text-center">
           {onSwitchToRegister && (
             <p>
-              Don’t have an account?{' '}
+              Don’t have an account?{" "}
               <button
                 type="button"
                 onClick={onSwitchToRegister}

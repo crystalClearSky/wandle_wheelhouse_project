@@ -1,5 +1,5 @@
-// src/services/BlogService.ts
 import apiClient from './api';
+import axios from 'axios';
 import { PagedResultDto } from '../dto/Common/PagedResultDto';
 import { BlogArticleCardDto } from '../dto/Blog/BlogArticleCardDto';
 import { BlogArticleResponseDto } from '../dto/Blog/BlogArticleResponseDto';
@@ -40,10 +40,21 @@ const BlogService = {
         }
     },
 
-    // Add other methods later (e.g., getAllArticles for admin, createArticle, updateArticle etc.)
-};
+    // Check if any published articles exist
+    hasArticles: async (): Promise<boolean> => {
+        try {
+            // Fetch minimal data (1 article) to check existence
+            const params = new URLSearchParams();
+            params.append('pageNumber', '1');
+            params.append('pageSize', '1');
 
-// Need to import axios to use isAxiosError check
-import axios from 'axios';
+            const response = await apiClient.get<PagedResultDto<BlogArticleCardDto>>(`/blogarticles?${params.toString()}`);
+            return response.data.totalCount > 0;
+        } catch (error: unknown) {
+            console.error('Error checking for published articles:', error);
+            return false; // Fallback to false on error
+        }
+    },
+};
 
 export default BlogService;

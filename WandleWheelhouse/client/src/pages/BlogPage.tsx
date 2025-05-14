@@ -87,7 +87,7 @@ const BlogPage: React.FC = () => {
 
       {/* No Articles State */}
       {!isLoading && !error && articles.length === 0 && (
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="container mx-auto px-20 sm:px-6 lg:px-8 py-30">
           <div className="max-w-md mx-auto bg-white border border-gray-200 rounded-xl p-6 text-center shadow-md">
             <p className="text-gray-600 font-semibold">No blog posts found.</p>
             <p className="text-gray-500 mt-2">Check back later for new content!</p>

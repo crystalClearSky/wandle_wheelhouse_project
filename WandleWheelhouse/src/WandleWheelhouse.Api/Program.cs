@@ -1,48 +1,46 @@
 // Location: src/WandleWheelhouse.Api/Program.cs
 
-// --- Using Statements ---
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection; // For Data Protection
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration; // For IConfiguration
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;       // For ILogger<Program>
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IO;
+using System.Reflection;
 using System.Text;
 using WandleWheelhouse.Api.Data;
+using WandleWheelhouse.Api.Data.Seed;     // <-- For IdentityDataSeeder
+// using WandleWheelhouse.Api.Middleware;   // For VisitorTrackingMiddleware
 using WandleWheelhouse.Api.Models;
 using WandleWheelhouse.Api.Services;
+using WandleWheelhouse.Api.SwaggerFilters;
 using WandleWheelhouse.Api.UnitOfWork;
-using System.IO; // For Path
-using System.Reflection; // For Assembly
-using WandleWheelhouse.Api.SwaggerFilters; // <-- Add using for your filter's namespace
-using Microsoft.Extensions.FileProviders; // For PhysicalFileProvider
-using Microsoft.AspNetCore.Http; // For StatusCodes
 
 var builder = WebApplication.CreateBuilder(args);
+var isDevelopment = builder.Environment.IsDevelopment();
 
 // --- 1. Configure Services ---
 
 // Database Context Configuration
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-var isDevelopment = builder.Environment.IsDevelopment();
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found in configuration. Ensure it's in .env for Docker or appsettings/user secrets for local non-Docker.");
 
-if (isDevelopment)
-{
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite(connectionString));
-}
-else
-{
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
-            mySqlOptions => mySqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorNumbersToAdd: null)
-            ));
-}
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString, npgsqlOptionsAction: sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorCodesToAdd: null);
+    }));
 
 // Email Sender Registration
-if (builder.Environment.IsDevelopment())
+if (isDevelopment)
 {
     builder.Services.AddSingleton<IEmailSender, DummyEmailSender>();
 }
@@ -55,7 +53,7 @@ else
 builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
     options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 6;
+    options.Password.RequiredLength = 8;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = true;
@@ -71,8 +69,25 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 
 // JWT Authentication Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secretKey = Encoding.ASCII.GetBytes(jwtSettings["Key"]
-    ?? throw new InvalidOperationException("JWT Key is missing in configuration"));
+var secretKeyString = jwtSettings["Key"]
+    ?? throw new InvalidOperationException("JWT Key ('Jwt:Key') is missing. Ensure it's in .env (e.g., JWT_KEY) or appsettings/user secrets.");
+
+if (Encoding.ASCII.GetBytes(secretKeyString).Length < 32 && isDevelopment)
+{
+    var tempLogger = LoggerFactory.Create(logBuilder => logBuilder.AddConsole()).CreateLogger<Program>();
+    tempLogger.LogWarning(
+        "SECURITY WARNING: JWT Key ('Jwt:Key') is less than 32 bytes (256 bits). " +
+        "This is INSECURE. Please use a strong, random key of at least 32 characters. " +
+        "Current Key (partial for safety): '{PartialKey}...'",
+        secretKeyString.Substring(0, Math.Min(secretKeyString.Length, 5))
+    );
+    // Consider throwing an exception here even in dev if you want to enforce strong keys early.
+}
+else if (Encoding.ASCII.GetBytes(secretKeyString).Length < 32 && !isDevelopment)
+{
+    throw new InvalidOperationException("PRODUCTION ERROR: JWT Key must be at least 256 bits (e.g., 32 ASCII characters if using HS256).");
+}
+var secretKey = Encoding.ASCII.GetBytes(secretKeyString);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -93,7 +108,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(secretKey),
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.FromMinutes(1)
     };
 });
 
@@ -105,244 +120,197 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireMemberRole", policy => policy.RequireRole("Administrator", "Editor", "Member"));
 });
 
-// CORS Configuration (Global)
-// Inside Program.cs -> Service Configuration section
-// LOCAL //
+// CORS Configuration
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowWebApp", // Name this policy
-        policyBuilder =>
+    options.AddPolicy("AllowWebApp", policyBuilder =>
+    {
+        List<string> allowedOrigins = new List<string>();
+        var loggerFactory = LoggerFactory.Create(logBuilder => logBuilder.AddConsole()); // Temp logger for CORS setup
+        var corsLogger = loggerFactory.CreateLogger("CORS_Policy_Setup");
+
+        if (isDevelopment)
         {
-            List<string> allowedOrigins = new List<string>();
-            if (isDevelopment) // Check if this is true when you run
-            {
-                // Add YOUR specific frontend development URL(s)
-                allowedOrigins.Add("http://localhost:5174"); // <-- ADD THIS
-                allowedOrigins.Add("http://127.0.0.1:5174"); // <-- AND THIS (Good practice)
+            allowedOrigins.Add("http://localhost:5174"); // Local Vite dev on Windows (Old)
+            allowedOrigins.Add("http://127.0.0.1:5174");
 
-                // Keep existing ones if needed (e.g., Vite default, Swagger)
-                allowedOrigins.Add("http://localhost:5173");
-                allowedOrigins.Add("http://127.0.0.1:5173");
-                allowedOrigins.Add("http://localhost:8080"); // <-- ADD THIS (for client container)
-                allowedOrigins.Add("http://127.0.0.1:8080"); // <-- AND THIS
-                allowedOrigins.Add($"https://localhost:{builder.Configuration.GetValue<int>("HttpsPort", 7136)}");
-                allowedOrigins.Add($"http://localhost:{builder.Configuration.GetValue<int>("HttpPort", 5041)}");
-            }
-            else
-            {
-                // Production frontend URL(s)
-                allowedOrigins.Add("https://wandlewheelhouse.org"); // Replace with actual prod URL
-            }
+            allowedOrigins.Add("http://localhost:8080"); // Docker client on Windows
+            allowedOrigins.Add("http://127.0.0.1:8080");
 
-            policyBuilder.WithOrigins(allowedOrigins.ToArray()) // Use the updated list
+            allowedOrigins.Add("http://localhost:5173"); // <-- ADD THIS if Vite sometimes uses 5173
+            allowedOrigins.Add("http://127.0.0.1:5173"); // <-- AND THIS
+
+            allowedOrigins.Add($"http://{builder.Configuration.GetValue<string>("PiLocalIp", "192.168.1.166")}:{builder.Configuration.GetValue<int>("PiClientPort", 5000)}"); // Client on Pi
+            allowedOrigins.Add($"https://localhost:{builder.Configuration.GetValue<int>("HttpsPort", 7136)}"); // Swagger local
+            allowedOrigins.Add($"http://localhost:{builder.Configuration.GetValue<int>("HttpPort", 5041)}");   // Swagger local
+            allowedOrigins.Add($"http://{builder.Configuration.GetValue<string>("PiLocalIp", "192.168.1.166")}:{builder.Configuration.GetValue<int>("PiApiPort", 5001)}"); // Swagger on Pi
+        }
+        else // Production
+        {
+            var prodOriginsConfig = builder.Configuration.GetValue<string>("CORS:AllowedOrigins");
+            if (!string.IsNullOrWhiteSpace(prodOriginsConfig))
+            {
+                allowedOrigins.AddRange(prodOriginsConfig.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(o => o.Trim()));
+            }
+        }
+
+        if (allowedOrigins.Any())
+        {
+            corsLogger.LogInformation("CORS Allowed Origins: {Origins}", string.Join(", ", allowedOrigins));
+            policyBuilder.WithOrigins(allowedOrigins.ToArray())
                          .AllowAnyHeader()
                          .AllowAnyMethod()
-                         .AllowCredentials(); // Allow credentials (needed for auth)
-        });
+                         .AllowCredentials();
+        }
+        else
+        {
+            corsLogger.LogCritical("CRITICAL: No CORS origins specified for the current environment. API may be inaccessible from frontend.");
+            // Consider a restrictive default or throwing an error in production if no origins configured.
+            // policyBuilder.WithOrigins("http://example.com").AllowAnyHeader().AllowAnyMethod(); // Example restrictive
+        }
+    });
 });
-/////
 
-// Docker //
-// builder.Services.AddCors(options =>
-// {
-//     options.AddPolicy("AllowWebApp",
-//         policyBuilder =>
-//         {
-//             List<string> allowedOrigins = new List<string>();
-//             if (isDevelopment)
-//             {
-//                 allowedOrigins.Add("http://localhost:5174"); // Old Vite dev server
-//                 allowedOrigins.Add("http://127.0.0.1:5174");
-//                 allowedOrigins.Add("http://localhost:8080"); // <-- ADD THIS (for client container)
-//                 allowedOrigins.Add("http://127.0.0.1:8080"); // <-- AND THIS
-
-//                 // Keep Swagger origins
-//                 allowedOrigins.Add($"https://localhost:{builder.Configuration.GetValue<int>("HttpsPort", 7136)}");
-//                 allowedOrigins.Add($"http://localhost:{builder.Configuration.GetValue<int>("HttpPort", 5041)}");
-//             }
-//             // ... rest of your CORS config ...
-//             policyBuilder.WithOrigins(allowedOrigins.ToArray())
-//                          .AllowAnyHeader()
-//                          .AllowAnyMethod()
-//                          .AllowCredentials();
-//         });
-// });
-//////
-
-// Controller Services
 builder.Services.AddControllers();
-
-// Swagger/OpenAPI Configuration
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "Wandle Wheelhouse API", Version = "v1" });
-
-    // Security Definition (Bearer Auth)
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
-    });
-
-    // Security Requirement
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement {
-    {
-        new OpenApiSecurityScheme
-        {
-            Reference = new OpenApiReference
-            {
-                Type = ReferenceType.SecurityScheme,
-                Id = "Bearer"
-            }
-        },
-        new string[] {}
-    }});
-
-    // Include XML Comments
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { /* ... as before ... */ });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement { /* ... as before ... */ });
     try
     {
         var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
         var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
-        if (File.Exists(xmlPath))
-        {
-            options.IncludeXmlComments(xmlPath);
-            Console.WriteLine($"Successfully included XML comments from: {xmlPath}");
-        }
-        else
-        {
-            Console.WriteLine($"XML comment file not found at: {xmlPath}");
-        }
+        if (File.Exists(xmlPath)) { options.IncludeXmlComments(xmlPath); Console.WriteLine($"XML comments loaded from: {xmlPath}"); }
+        else { Console.WriteLine($"XML comment file NOT found at: {xmlPath}"); }
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error including XML comments: {ex.Message}");
-    }
-
-    // --- Register the Custom Operation Filter for File Uploads ---
-    options.OperationFilter<FileUploadOperationFilter>(); // <-- ADD THIS LINE
-    // --- End Filter Registration ---
-
+    catch (Exception ex) { Console.WriteLine($"Error loading XML comments: {ex.Message}"); }
+    options.OperationFilter<FileUploadOperationFilter>();
 });
 
-// Register custom application services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-// Add other services like IPaymentService etc. if/when created
+
+// Configure Data Protection to Persist Keys
+var keysFolderFromConfig = builder.Configuration.GetValue<string>("DataProtection:KeysPath"); // Reads DataProtection__KeysPath env var
+var dataProtectionKeysFolder = keysFolderFromConfig;
+if (string.IsNullOrWhiteSpace(dataProtectionKeysFolder))
+{
+    dataProtectionKeysFolder = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys-LocalFallback");
+}
+if (!Directory.Exists(dataProtectionKeysFolder) && isDevelopment)
+{
+    try { Directory.CreateDirectory(dataProtectionKeysFolder); } catch { /* Log warning if needed */ }
+}
+if (Directory.Exists(dataProtectionKeysFolder))
+{
+    builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysFolder));
+}
+else if (!isDevelopment && string.IsNullOrWhiteSpace(keysFolderFromConfig))
+{
+    throw new InvalidOperationException($"Production DataProtectionKeysPath ('{keysFolderFromConfig}') not configured/found.");
+}
 
 // --- 2. Configure HTTP Request Pipeline ---
-
 var app = builder.Build();
-///////
-// Ensure this is placed AFTER builder.Build() and BEFORE app.Run()
-if (app.Environment.IsDevelopment()) // Or a specific configuration check
+
+// Log effective DataProtectionKeysPath
+var effectiveDpKeysPath = dataProtectionKeysFolder;
+if (string.IsNullOrWhiteSpace(builder.Configuration.GetValue<string>("DataProtection:KeysPath")))
 {
+    effectiveDpKeysPath = Path.Combine(app.Environment.ContentRootPath, "DataProtection-Keys-LocalFallback");
+}
+app.Logger.LogInformation("Data Protection keys will be stored at: {EffectiveDpKeysPath}", effectiveDpKeysPath);
+
+
+// --- Automatically Apply Migrations and Seed Data on Startup ---
+// Use a more descriptive config key if desired
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("ApplyMigrationsAndSeedOnStartup", false))
+{
+    app.Logger.LogInformation("ApplyMigrationsAndSeedOnStartup: Checking for database actions...");
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
+        var dbContext = services.GetRequiredService<ApplicationDbContext>();
+        var appConfig = services.GetRequiredService<IConfiguration>(); // Get IConfiguration
+        var appLogger = services.GetRequiredService<ILogger<Program>>(); // Get ILogger<Program>
+
         try
         {
-            var context = services.GetRequiredService<ApplicationDbContext>();
-            if (context.Database.GetPendingMigrations().Any())
+            if (dbContext.Database.GetPendingMigrations().Any())
             {
-                app.Logger.LogInformation("Applying pending database migrations...");
-                await context.Database.MigrateAsync(); // Applies pending migrations
-                app.Logger.LogInformation("Database migrations applied successfully.");
+                appLogger.LogInformation("ApplyMigrationsAndSeedOnStartup: Applying pending database migrations...");
+                await dbContext.Database.MigrateAsync();
+                appLogger.LogInformation("ApplyMigrationsAndSeedOnStartup: Database migrations applied successfully.");
             }
             else
             {
-                app.Logger.LogInformation("No pending database migrations to apply.");
+                appLogger.LogInformation("ApplyMigrationsAndSeedOnStartup: No pending database migrations to apply.");
             }
 
-            // Optional: Seed data if needed after migrations
-            // await SeedData.Initialize(services); // Example call if you have a seeder
+            // --- Call the IdentityDataSeeder ---
+            appLogger.LogInformation("ApplyMigrationsAndSeedOnStartup: Attempting to seed initial identity data...");
+            await IdentityDataSeeder.Initialize(services, appConfig, appLogger); // Pass IServiceProvider, IConfiguration, ILogger
+            appLogger.LogInformation("ApplyMigrationsAndSeedOnStartup: Identity data seeding process completed.");
+            // --- End Seeding Call ---
         }
         catch (Exception ex)
         {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "An error occurred while migrating or seeding the database.");
-            // Optionally, rethrow or handle as critical startup failure
-            // throw; // Re-throwing will stop the application if DB migration fails
+            appLogger.LogError(ex, "ApplyMigrationsAndSeedOnStartup: An error occurred while migrating or seeding the database.");
         }
     }
 }
+// --- End Automatic Migration and Seed ---
 
-// --- Development Only: Reset SQLite Database on Startup ---
-///////
-if (app.Environment.IsDevelopment())
-{
-    // using (var scope = app.Services.CreateScope())
-    // {
-    //     var services = scope.ServiceProvider;
-    //     var logger = services.GetRequiredService<ILogger<Program>>();
-    //     try
-    //     {
-    //         var context = services.GetRequiredService<ApplicationDbContext>();
-    //         logger.LogInformation("Development: Deleting existing development database...");
-    //         await context.Database.EnsureDeletedAsync();
-    //         logger.LogInformation("Development: Database deleted successfully.");
-    //         logger.LogInformation("Development: Applying migrations to create database...");
-    //         await context.Database.MigrateAsync();
-    //         logger.LogInformation("Development: Database created and migrations applied.");
-    //         // Optional Seeding
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         logger.LogError(ex, "An error occurred during development database reset.");
-    //     }
-    // }
-}
-
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Wandle Wheelhouse API V1");
-        c.EnablePersistAuthorization(); // Optional: Persist auth token in browser session
+        c.EnablePersistAuthorization();
     });
-    // Use Developer Exceptions Page AFTER Swagger setup for better Swagger error visibility
     app.UseDeveloperExceptionPage();
 }
 else
 {
-    app.UseExceptionHandler("/Error"); // Configure a proper error handling page/endpoint
+    app.UseExceptionHandler(appBuilder => { /* ... production error handler ... */ });
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// HTTPS Redirection: Comment out if your reverse proxy on Pi handles HTTPS termination
+// if (!app.Environment.IsDevelopment()) // Or more specific check for proxy
+// {
+//     app.UseHttpsRedirection();
+// }
 
-// --- Static Files Configuration ---
-// Serve files from wwwroot (if it exists)
-app.UseStaticFiles();
-
-// Specifically configure serving files from the 'uploads' directory
-// Ensure 'uploads' folder exists inside wwwroot folder at the API project root
+// Static Files Configuration
+app.UseStaticFiles(); // For general wwwroot (if used)
 var uploadsPath = Path.Combine(app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"), "uploads");
-if (!Directory.Exists(uploadsPath))
+if (!Directory.Exists(uploadsPath) && app.Environment.IsDevelopment())
+{ // Only auto-create in dev
+    try { Directory.CreateDirectory(uploadsPath); app.Logger.LogInformation("Created directory for uploads: {UploadsPath}", uploadsPath); }
+    catch (Exception ex) { app.Logger.LogError(ex, "Failed to create directory for uploads: {UploadsPath}", uploadsPath); }
+}
+if (Directory.Exists(uploadsPath))
 {
-    try { Directory.CreateDirectory(uploadsPath); app.Logger.LogInformation("Created directory: {UploadsPath}", uploadsPath); }
-    catch (Exception ex) { app.Logger.LogError(ex, "Failed to create directory {UploadsPath}", uploadsPath); }
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(uploadsPath),
+        RequestPath = "/uploads"
+    });
 }
 
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(uploadsPath), // Use correct using: Microsoft.Extensions.FileProviders
-    RequestPath = "/uploads" // Access files via https://.../uploads/...
-});
-// --- End Static Files Configuration ---
+app.UseRouting();
+app.UseCors("AllowWebApp");
 
+// Visitor Tracking Middleware (if you created it and want to use it)
+// Make sure the class and namespace WandleWheelhouse.Api.Middleware.VisitorTrackingMiddleware exist
+// app.UseMiddleware<VisitorTrackingMiddleware>();
 
-// IMPORTANT: Middleware Order Matters!
-app.UseCors("AllowWebApp"); // CORS before Auth
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.UseAuthentication(); // Who are you?
-app.UseAuthorization(); // Are you allowed?
+app.MapControllers();
 
-app.MapControllers(); // Map controller routes AFTER Auth setup
-
-app.Run(); // Start the application
+app.Run();

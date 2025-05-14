@@ -1,4 +1,3 @@
-// src/App.tsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
@@ -9,13 +8,15 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import SubscriptionPage from './pages/SubscriptionPage';
-import BlogPostCreatePage from './pages/admin/BlogPostCreatePage'; // <-- Import Create Page
+import BlogPostCreatePage from './pages/admin/BlogPostCreatePage';
 import ContactPage from './pages/ContactPage';
-import BlogPostEditPage from './pages/admin/BlogPostEditPage'; // <-- Added this import
+import BlogPostEditPage from './pages/admin/BlogPostEditPage';
+import ScrollToTop from './components/ScrollToTop'; // <-- Added import
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop /> {/* <-- Added ScrollToTop */}
       <Routes>
         {/* Routes using the main Layout */}
         <Route path="/" element={<Layout />}>
@@ -31,17 +32,15 @@ function App() {
           {/* --- Protected Routes --- */}
           {/* Admin/Editor Only */}
           <Route element={<ProtectedRoute allowedRoles={['Administrator', 'Editor']} />}>
-             <Route path="dashboard" element={<DashboardPage />} />
-             <Route path="admin/blog/create" element={<BlogPostCreatePage />} /> {/* <-- Added Create Route */}
-             <Route path="admin/blog/edit/:id" element={<BlogPostEditPage />} />
-             {/* Add route for editing later: /admin/blog/edit/:slug */}
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="admin/blog/create" element={<BlogPostCreatePage />} />
+            <Route path="admin/blog/edit/:id" element={<BlogPostEditPage />} />
           </Route>
 
           {/* Any Logged-in User */}
           <Route element={<ProtectedRoute />}>
-             <Route path="profile" element={<ProfilePage />} />
-             <Route path="subscription" element={<SubscriptionPage />} />
-             {/* Add other member-only routes here */}
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="subscription" element={<SubscriptionPage />} />
           </Route>
           {/* --- End Protected Routes --- */}
 
@@ -51,7 +50,6 @@ function App() {
 
         {/* Routes outside the main Layout (if any) */}
         {/* e.g., <Route path="/standalone" element={<StandalonePage />} /> */}
-
       </Routes>
     </BrowserRouter>
   );

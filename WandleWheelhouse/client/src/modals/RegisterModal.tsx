@@ -1,10 +1,14 @@
-import React, { useState, FormEvent } from 'react';
-import Modal from '../components/ui/Modal';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
-import AuthService from '../services/AuthService';
-import { RegisterDto } from '../dto/Auth/RegisterDto';
-import { ExclamationCircleIcon, CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import React, { FormEvent, useState } from "react";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import Modal from "../components/ui/Modal";
+import { RegisterDto } from "../dto/Auth/RegisterDto";
+import AuthService from "../services/AuthService";
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -12,21 +16,25 @@ interface RegisterModalProps {
   onSwitchToLogin?: () => void;
 }
 
-const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onRequestClose, onSwitchToLogin }) => {
+const RegisterModal: React.FC<RegisterModalProps> = ({
+  isOpen,
+  onRequestClose,
+  onSwitchToLogin,
+}) => {
   const [formData, setFormData] = useState<RegisterDto>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
   });
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
+    setFormData((prevState) => ({
       ...prevState,
       [name]: value,
     }));
@@ -40,12 +48,12 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onRequestClose, o
 
     // Client-side validation
     if (formData.password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError("Passwords do not match.");
       setIsLoading(false);
       return;
     }
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+      setError("Password must be at least 6 characters long.");
       setIsLoading(false);
       return;
     }
@@ -54,10 +62,12 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onRequestClose, o
       const response = await AuthService.register(formData);
 
       if (response.isSuccess) {
-        setSuccessMessage(response.message || 'Registration successful! You can now log in.');
+        setSuccessMessage(
+          response.message || "Registration successful! You can now log in."
+        );
         setTimeout(() => {
-          setFormData({ firstName: '', lastName: '', email: '', password: '' });
-          setConfirmPassword('');
+          setFormData({ firstName: "", lastName: "", email: "", password: "" });
+          setConfirmPassword("");
           setError(null);
           setIsLoading(false);
           if (onSwitchToLogin) {
@@ -67,14 +77,16 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onRequestClose, o
           }
         }, 1500);
       } else {
-        setError(response.message || 'Registration failed: Unexpected response.');
+        setError(
+          response.message || "Registration failed: Unexpected response."
+        );
         setIsLoading(false);
       }
     } catch (err: unknown) {
-      let message = 'An unexpected error occurred during registration.';
+      let message = "An unexpected error occurred during registration.";
       if (err instanceof Error) {
         message = err.message;
-      } else if (typeof err === 'string') {
+      } else if (typeof err === "string") {
         message = err;
       }
       setError(message);
@@ -83,8 +95,8 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onRequestClose, o
   };
 
   const handleClose = () => {
-    setFormData({ firstName: '', lastName: '', email: '', password: '' });
-    setConfirmPassword('');
+    setFormData({ firstName: "", lastName: "", email: "", password: "" });
+    setConfirmPassword("");
     setError(null);
     setSuccessMessage(null);
     setIsLoading(false);
@@ -92,8 +104,12 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onRequestClose, o
   };
 
   return (
-    <Modal isOpen={isOpen} onRequestClose={handleClose} title="Register New Account">
-      <div className="relative bg-white rounded-xl  sm:p-4 max-w-lg w-full mx-4 sm:mx-auto">
+    <Modal
+      isOpen={isOpen}
+      onRequestClose={handleClose}
+      title="Register New Account"
+    >
+      <div className="relative bg-white rounded-xl  sm:p-4 max-w-lg w-full mx-0 sm:mx-auto">
         {/* Close Button */}
         <button
           onClick={handleClose}
@@ -223,12 +239,12 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onRequestClose, o
                   Registering...
                 </>
               ) : (
-                'Register'
+                "Register"
               )}
             </Button>
             {onSwitchToLogin && (
               <p className="mt-4 text-sm">
-                Already have an account?{' '}
+                Already have an account?{" "}
                 <button
                   type="button"
                   onClick={onSwitchToLogin}

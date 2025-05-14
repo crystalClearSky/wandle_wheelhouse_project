@@ -9,7 +9,11 @@ import RegisterModal from "../modals/RegisterModal";
 import Avatar from "./ui/Avatar";
 import Button from "./ui/Button";
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+  hasBlogArticles: boolean | null;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
   const { isAuthenticated, user, logout, isLoading } = useAuth();
   const { pathname } = useLocation();
 
@@ -22,8 +26,9 @@ const Navbar: React.FC = () => {
   const [isLogoShrunk, setIsLogoShrunk] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // --- Check if navbar should ignore isScrolled ---
-  const isFixedNavbarRoute = ["/profile", "/dashboard", "/contact"].includes(pathname);
+  // --- Check if navbar should have solid background ---
+  const isFixedNavbarRoute = ["/profile", "/dashboard", "/contact"].includes(pathname) ||
+    (pathname === "/blog" && hasBlogArticles === false);
 
   // --- Refs for closing menus ---
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -58,6 +63,14 @@ const Navbar: React.FC = () => {
   };
   const toggleUserDropdown = () => setIsUserDropdownOpen((prev) => !prev);
   const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev);
+
+  // --- Smooth Scroll Handler for Home Link ---
+  const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname === "/") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   // --- Scroll Handler for Logo Scaling and Navbar Transparency ---
   useEffect(() => {
@@ -136,6 +149,7 @@ const Navbar: React.FC = () => {
         >
           <Link
             to="/"
+            onClick={handleHomeClick}
             className={`text-lg font-semibold ${
               isFixedNavbarRoute || isScrolled
                 ? "text-gray-800 hover:text-indigo-600"
@@ -333,12 +347,15 @@ const Navbar: React.FC = () => {
               <div className="flex flex-col px-3 py-2">
                 <Link
                   to="/"
+                  onClick={(e) => {
+                    handleHomeClick(e);
+                    setIsMobileMenuOpen(false);
+                  }}
                   className={`block px-4 py-3 text-lg font-medium ${
                     isFixedNavbarRoute || isScrolled
                       ? "text-gray-800 hover:text-indigo-600"
                       : "text-gray-800 hover:text-indigo-600"
                   } hover:bg-indigo-50 rounded-md`}
-                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Home
                 </Link>

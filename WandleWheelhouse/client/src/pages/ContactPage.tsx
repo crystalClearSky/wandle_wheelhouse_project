@@ -1,14 +1,14 @@
-// src/pages/ContactPage.tsx
-// ... other imports like React, Link, Button ...
-import React from 'react';
-// import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import Button from '../components/ui/Button';
-import { useAuth } from '../contexts/AuthContext'; // <-- CORRECTED: Use useAuth and adjust path
 import ContactForm from '../components/forms/ContactForm';
+import DonationModal from '../modals/DonationModal';
 import { FaFacebookF, FaInstagram } from 'react-icons/fa';
 
 const ContactPage: React.FC = () => {
-  const { openDonationModal } = useAuth(); // <-- Now correctly uses useAuth
+  const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
+
+  const openDonateModal = () => setIsDonateModalOpen(true);
+  const closeDonateModal = () => setIsDonateModalOpen(false);
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
@@ -37,7 +37,7 @@ const ContactPage: React.FC = () => {
             </p>
             <Button
               variant="primary"
-              onClick={openDonationModal} // This will now work
+              onClick={openDonateModal}
               className="w-full transition-transform hover:scale-105 py-3"
               aria-label="Make a donation to Wandle Wheelhouse"
             >
@@ -54,7 +54,7 @@ const ContactPage: React.FC = () => {
                 <p className="text-gray-600">
                   For specific inquiries, you can email us at:{' '}
                   <a
-                    href="mailto:contact@wandlewheelhouse.org" // Replace with your actual email
+                    href="mailto:contact@wandlewheelhouse.org"
                     className="text-indigo-600 hover:text-indigo-800 underline"
                   >
                     contact@wandlewheelhouse.org
@@ -70,13 +70,18 @@ const ContactPage: React.FC = () => {
                   <a href="https://instagram.com/yourpage" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-indigo-600 transition-colors duration-200 p-2 rounded-full hover:bg-indigo-50" aria-label="Wandle Wheelhouse on Instagram">
                     <FaInstagram size={24} />
                   </a>
-                  {/* Add other social links */}
                 </div>
               </div>
             </div>
           </section>
         </div>
       </div>
+
+      {/* Render Donation Modal */}
+      <DonationModal
+        isOpen={isDonateModalOpen}
+        onRequestClose={closeDonateModal}
+      />
     </div>
   );
 };
