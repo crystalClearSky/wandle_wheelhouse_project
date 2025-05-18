@@ -109,7 +109,7 @@ const FullBlogArticlePage: React.FC = () => {
     <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white shadow-lg rounded-lg my-8">
 
        {/* Back Link */}
-       <Link to="/blog" className="text-blue-600 hover:underline text-sm mb-6 inline-block">&larr; Back to Blog</Link>
+       {/* <Link to="/blog" className="text-blue-600 hover:underline text-sm mb-6 inline-block">&larr; Back to Blog</Link> */}
 
       {/* Article Title */}
       <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 leading-tight">
@@ -144,7 +144,7 @@ const FullBlogArticlePage: React.FC = () => {
       >
         {/* HTML content is rendered here */}
       </div>
-
+       <Link to="/blog" className="text-blue-600 hover:underline text-sm mb-6 inline-block">&larr; Back to Blog</Link>
     </article>
   );
 };

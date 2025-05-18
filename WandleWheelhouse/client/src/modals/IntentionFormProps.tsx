@@ -1,30 +1,39 @@
-import React, { useState, FormEvent } from 'react';
-import { ExclamationCircleIcon, CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
-import Modal from '../components/ui/Modal';
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import React, { FormEvent, useState } from "react";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import Modal from "../components/ui/Modal";
 
 interface IntentionFormProps {
   isOpen: boolean;
   onRequestClose: () => void;
 }
 
-const IntentionForm: React.FC<IntentionFormProps> = ({ isOpen, onRequestClose }) => {
+const IntentionForm: React.FC<IntentionFormProps> = ({
+  isOpen,
+  onRequestClose,
+}) => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    type: '',
-    groupType: '',
-    organization: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    type: "",
+    groupType: "",
+    organization: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
+    setFormData((prevState) => ({
       ...prevState,
       [name]: value,
     }));
@@ -38,50 +47,52 @@ const IntentionForm: React.FC<IntentionFormProps> = ({ isOpen, onRequestClose })
 
     // Client-side validation
     if (!formData.firstName || !formData.lastName) {
-      setError('First and last name are required.');
+      setError("First and last name are required.");
       setIsLoading(false);
       return;
     }
     if (!formData.email) {
-      setError('Email is required.');
+      setError("Email is required.");
       setIsLoading(false);
       return;
     }
     if (!formData.type) {
-      setError('Please select a registration type.');
+      setError("Please select a registration type.");
       setIsLoading(false);
       return;
     }
     if (!formData.groupType) {
-      setError('Please select a participant type.');
+      setError("Please select a participant type.");
       setIsLoading(false);
       return;
     }
 
     try {
       // Simulate async submission (replace with actual service call if needed)
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-      console.log('Registration submitted:', formData);
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network delay
+      console.log("Registration submitted:", formData);
 
-      setSuccessMessage('Registration submitted successfully! We will contact you soon.');
+      setSuccessMessage(
+        "Registration submitted successfully! We will contact you soon."
+      );
       setTimeout(() => {
         setFormData({
-          firstName: '',
-          lastName: '',
-          email: '',
-          type: '',
-          groupType: '',
-          organization: '',
+          firstName: "",
+          lastName: "",
+          email: "",
+          type: "",
+          groupType: "",
+          organization: "",
         });
         setError(null);
         setIsLoading(false);
         onRequestClose();
       }, 1500);
     } catch (err: unknown) {
-      let message = 'An unexpected error occurred during submission.';
+      let message = "An unexpected error occurred during submission.";
       if (err instanceof Error) {
         message = err.message;
-      } else if (typeof err === 'string') {
+      } else if (typeof err === "string") {
         message = err;
       }
       setError(message);
@@ -91,12 +102,12 @@ const IntentionForm: React.FC<IntentionFormProps> = ({ isOpen, onRequestClose })
 
   const handleClose = () => {
     setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      type: '',
-      groupType: '',
-      organization: '',
+      firstName: "",
+      lastName: "",
+      email: "",
+      type: "",
+      groupType: "",
+      organization: "",
     });
     setError(null);
     setSuccessMessage(null);
@@ -105,8 +116,12 @@ const IntentionForm: React.FC<IntentionFormProps> = ({ isOpen, onRequestClose })
   };
 
   return (
-    <Modal isOpen={isOpen} onRequestClose={handleClose} title="Register with Wandle Heritage">
-      <div className="relative bg-white rounded-xl sm:p-4 max-w-lg w-full mx-4 sm:mx-auto">
+    <Modal
+      isOpen={isOpen}
+      onRequestClose={handleClose}
+      title="Register with Wandle Heritage"
+    >
+      <div className="relative bg-white rounded-xl sm:p-4 max-w-lg w-full mx-0 sm:mx-auto">
         {/* Close Button */}
         <button
           onClick={handleClose}
@@ -180,7 +195,10 @@ const IntentionForm: React.FC<IntentionFormProps> = ({ isOpen, onRequestClose })
             className="w-full border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg"
           />
           <div>
-            <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="type"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Registration Type
             </label>
             <select
@@ -200,7 +218,10 @@ const IntentionForm: React.FC<IntentionFormProps> = ({ isOpen, onRequestClose })
             </select>
           </div>
           <div>
-            <label htmlFor="groupType" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="groupType"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Participant Type
             </label>
             <select
@@ -262,14 +283,14 @@ const IntentionForm: React.FC<IntentionFormProps> = ({ isOpen, onRequestClose })
                   Submitting...
                 </>
               ) : (
-                'Submit'
+                "Submit"
               )}
             </Button>
             <p className="mt-4 text-sm">
-              Need more information?{' '}
+              Need more information?{" "}
               <button
                 type="button"
-                onClick={() => window.location.href = '/contact'}
+                onClick={() => (window.location.href = "/contact")}
                 className="font-semibold text-indigo-600 hover:text-indigo-700 focus:outline-none transition-colors duration-200"
                 disabled={isLoading}
               >

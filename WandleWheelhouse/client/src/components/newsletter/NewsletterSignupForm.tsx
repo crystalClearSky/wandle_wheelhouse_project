@@ -30,8 +30,8 @@ const NewsletterSignupForm: React.FC = () => {
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-2 text-gray-700">Stay Updated</h3>
-      <p className="text-sm text-gray-600 mb-3">Subscribe to our newsletter for updates and news.</p>
+      <h3 className="text-lg font-semibold mb-2 text-white">Stay Updated</h3>
+      <p className="text-sm text-gray-400 mb-3">Subscribe to our newsletter for updates and news.</p>
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
          {/* Reduced margin bottom on input for form context */}
         <Input

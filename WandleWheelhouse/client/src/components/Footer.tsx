@@ -11,7 +11,7 @@ const Footer: React.FC = () => {
         {/* Column 1: About/Contact Info */}
         <div>
           <h3 className="text-lg font-semibold mb-3 text-white">Wandle Wheelhouse</h3>
-          <p className="text-sm mb-2">Your address here, Croydon</p>
+          <p className="text-sm mb-2">The Wheelhouse Watermill Way, Merton Abbey Mills, London, England, SW19 2RD</p>
           <p className="text-sm mb-2">Email: info@wandlewheelhouse.org</p>
           <p className="text-sm">Phone: 020 XXXX XXXX</p>
           {/* Add Social Media Links here later */}
@@ -21,9 +21,9 @@ const Footer: React.FC = () => {
         <div>
           <h3 className="text-lg font-semibold mb-3 text-white">Quick Links</h3>
           <ul className="space-y-1 text-sm">
-            <li><a href="/mission" className="hover:text-white">Our Mission</a></li>
-            <li><a href="/blog" className="hover:text-white">Blog</a></li>
-            <li><a href="#" className="hover:text-white">Get Involved</a></li>
+            <li><a href="/mission" className="text-gray-400 hover:text-white">Our Mission</a></li>
+            <li><a href="/blog" className="text-gray-400 hover:text-white">Blog</a></li>
+            <li><a href="#" className="text-gray-400 hover:text-white">Get Involved</a></li>
             <li><Link to="/contact" className="text-gray-400 hover:text-white">Contact Us</Link></li>
             {/* Add other relevant links */}
           </ul>
@@ -37,7 +37,7 @@ const Footer: React.FC = () => {
 
       </div>
       <div className="text-center text-xs text-gray-500 mt-8 pt-4 border-t border-gray-700">
-        © {new Date().getFullYear()} Wandle Wheelhouse. All rights reserved. | Charity No: XXXXXXX
+        © {new Date().getFullYear()} Wandle Heritage Limited. All rights reserved. | Charity No: 1045636
       </div>
     </footer>
   );

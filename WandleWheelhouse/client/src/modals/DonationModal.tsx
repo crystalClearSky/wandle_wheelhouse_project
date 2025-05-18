@@ -1,40 +1,51 @@
-import React, { useState, FormEvent, useMemo } from 'react';
-import Modal from '../components/ui/Modal';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
-import DonationService from '../services/DonationService';
-import { useAuth } from '../contexts/AuthContext';
-import { PaymentMethod } from '../dto/Donations/PaymentMethodEnum';
-import { DonationRequestDto } from '../dto/Donations/DonationRequestDto';
-import { PaymentStatus } from '../dto/Donations/PaymentStatusEnum';
-import { ExclamationCircleIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
+import React, { FormEvent, useMemo, useState } from "react";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import Modal from "../components/ui/Modal";
+import { useAuth } from "../contexts/AuthContext";
+import { DonationRequestDto } from "../dto/Donations/DonationRequestDto";
+import { PaymentMethod } from "../dto/Donations/PaymentMethodEnum";
+import { PaymentStatus } from "../dto/Donations/PaymentStatusEnum";
+import DonationService from "../services/DonationService";
 
 interface DonationModalProps {
   isOpen: boolean;
   onRequestClose: () => void;
 }
 
-const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose }) => {
+const DonationModal: React.FC<DonationModalProps> = ({
+  isOpen,
+  onRequestClose,
+}) => {
   const { isAuthenticated } = useAuth();
 
   const [amount, setAmount] = useState<number | string>(10);
-  const [customAmount, setCustomAmount] = useState<number | string>('');
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(PaymentMethod.Worldpay);
-  const [anonFirstName, setAnonFirstName] = useState('');
-  const [anonLastName, setAnonLastName] = useState('');
-  const [anonEmail, setAnonEmail] = useState('');
+  const [customAmount, setCustomAmount] = useState<number | string>("");
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(
+    PaymentMethod.Worldpay
+  );
+  const [anonFirstName, setAnonFirstName] = useState("");
+  const [anonLastName, setAnonLastName] = useState("");
+  const [anonEmail, setAnonEmail] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const donationAmounts = [5, 10, 25, 50, 100];
-  const showCustomAmountInput = useMemo(() => !donationAmounts.includes(Number(amount)), [amount]);
+  const donationAmounts = [5, 10, 25, 50];
+  const showCustomAmountInput = useMemo(
+    () => !donationAmounts.includes(Number(amount)),
+    [amount]
+  );
 
   const handleAmountChange = (value: number | string) => {
     setAmount(value);
     if (donationAmounts.includes(Number(value))) {
-      setCustomAmount('');
+      setCustomAmount("");
     }
   };
 
@@ -44,7 +55,9 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose })
     setError(null);
     setSuccessMessage(null);
 
-    const finalAmount = showCustomAmountInput ? Number(customAmount) : Number(amount);
+    const finalAmount = showCustomAmountInput
+      ? Number(customAmount)
+      : Number(amount);
 
     if (isNaN(finalAmount) || finalAmount < 1) {
       setError("Please enter a valid donation amount (£1 or more).");
@@ -67,16 +80,25 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose })
 
     try {
       const response = await DonationService.processDonation(donationData);
-      if (response.status === 1) { // Assuming 1 is PaymentStatus.Success
-        setSuccessMessage(`Thank you! Your donation of £${response.amount.toFixed(2)} was processed successfully.`);
+      if (response.status === 1) {
+        // Assuming 1 is PaymentStatus.Success
+        setSuccessMessage(
+          `Thank you! Your donation of £${response.amount.toFixed(
+            2
+          )} was processed successfully.`
+        );
       } else {
-        setSuccessMessage(`Donation recorded, but payment status is: ${PaymentStatus[response.status] ?? 'Unknown'}.`);
+        setSuccessMessage(
+          `Donation recorded, but payment status is: ${
+            PaymentStatus[response.status] ?? "Unknown"
+          }.`
+        );
       }
       setTimeout(() => {
         handleClose();
       }, 1500);
     } catch (err: unknown) {
-      let message = 'An unexpected error occurred.';
+      let message = "An unexpected error occurred.";
       if (err instanceof Error) message = err.message;
       setError(message);
     } finally {
@@ -86,11 +108,11 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose })
 
   const handleClose = () => {
     setAmount(10);
-    setCustomAmount('');
+    setCustomAmount("");
     setSelectedMethod(PaymentMethod.Worldpay);
-    setAnonFirstName('');
-    setAnonLastName('');
-    setAnonEmail('');
+    setAnonFirstName("");
+    setAnonLastName("");
+    setAnonEmail("");
     setError(null);
     setSuccessMessage(null);
     setIsLoading(false);
@@ -128,15 +150,19 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose })
 
         {/* Amount Selection */}
         <div>
-          <label className="block text-gray-700 font-medium mb-2">Select Donation Amount (£)</label>
+          <label className="block text-gray-700 font-medium mb-2">
+            Select Donation Amount (£)
+          </label>
           <div className="flex flex-wrap gap-2">
             {donationAmounts.map((presetAmount) => (
               <Button
                 key={presetAmount}
                 type="button"
-                variant={amount === presetAmount ? 'primary' : 'secondary'}
+                variant={amount === presetAmount ? "primary" : "secondary"}
                 className={`py-3 px-4 rounded-lg transition-all duration-300 hover:scale-105 ${
-                  amount === presetAmount ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  amount === presetAmount
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                 }`}
                 onClick={() => handleAmountChange(presetAmount)}
                 disabled={isLoading}
@@ -147,11 +173,13 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose })
             <Button
               key="custom"
               type="button"
-              variant={showCustomAmountInput ? 'primary' : 'secondary'}
+              variant={showCustomAmountInput ? "primary" : "secondary"}
               className={`py-3 px-4 rounded-lg transition-all duration-300 hover:scale-105 ${
-                showCustomAmountInput ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                showCustomAmountInput
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
               }`}
-              onClick={() => handleAmountChange('custom')}
+              onClick={() => handleAmountChange("custom")}
               disabled={isLoading}
             >
               Other
@@ -175,7 +203,9 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose })
 
         {/* Payment Method */}
         <div>
-          <label className="block text-gray-700 font-medium mb-2">Payment Method</label>
+          <label className="block text-gray-700 font-medium mb-2">
+            Payment Method
+          </label>
           <div className="space-y-2">
             <label className="flex items-center">
               <input
@@ -208,7 +238,9 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose })
         {!isAuthenticated && (
           <>
             <hr className="my-4" />
-            <p className="text-sm text-gray-600 mb-3">Please provide your details (required for anonymous donation):</p>
+            <p className="text-sm text-gray-600 mb-3">
+              Please provide your details (required for anonymous donation):
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
               <Input
                 label="First Name"
@@ -245,7 +277,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose })
           <Button
             type="button"
             onClick={handleClose}
-            className="w-full py-3 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all duration-300 hover:scale-105"
+            className="w-full py-3 px-4 bg-gray-700 text-gray-800 rounded-lg hover:bg-gray-900 transition-all duration-300 hover:scale-105"
             disabled={isLoading}
           >
             Cancel
@@ -281,7 +313,11 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onRequestClose })
                 Processing...
               </>
             ) : (
-              `Donate £${showCustomAmountInput ? Number(customAmount).toFixed(2) : Number(amount).toFixed(2)}`
+              `Donate £${
+                showCustomAmountInput
+                  ? Number(customAmount).toFixed(2)
+                  : Number(amount).toFixed(2)
+              }`
             )}
           </Button>
         </div>

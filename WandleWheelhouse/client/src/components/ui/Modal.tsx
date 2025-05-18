@@ -17,10 +17,26 @@ const Modal: React.FC<ModalProps> = ({
   children,
   contentLabel = title || 'Modal Window',
 }) => {
+  // Disable scroll when modal opens
+  const handleAfterOpen = () => {
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+  };
+
+  // Restore scroll when modal closes
+  const handleAfterClose = () => {
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+  };
+
   return (
     <ReactModal
       isOpen={isOpen}
       onRequestClose={onRequestClose}
+      onAfterOpen={handleAfterOpen}
+      onAfterClose={handleAfterClose}
       contentLabel={contentLabel}
       overlayClassName={{
         base: 'fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-150 ease-out',

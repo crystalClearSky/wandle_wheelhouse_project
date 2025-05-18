@@ -1,13 +1,12 @@
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import React, { useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import photoAsset from "../assets/photo_2025-05-06_14-16-42.jpg";
-import { useAuth } from "../contexts/AuthContext";
-import DonationModal from "../modals/DonationModal";
-import LoginModal from "../modals/LoginModal";
-import RegisterModal from "../modals/RegisterModal";
-import Avatar from "./ui/Avatar";
-import Button from "./ui/Button";
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import photoAsset from '../assets/photo_2025-05-06_14-16-42.jpg';
+import { useAuth } from '../contexts/AuthContext';
+import DonationModal from '../modals/DonationModal';
+import LoginModal from '../modals/LoginModal';
+import RegisterModal from '../modals/RegisterModal';
+import Avatar from './ui/Avatar';
+import Button from './ui/Button';
 
 interface NavbarProps {
   hasBlogArticles: boolean | null;
@@ -28,7 +27,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
 
   // --- Check if navbar should have solid background ---
   const isFixedNavbarRoute = ["/profile", "/dashboard", "/contact"].includes(pathname) ||
-    (pathname === "/blog" && hasBlogArticles === false);
+    (pathname === "/blog" && hasBlogArticles === false) || pathname.startsWith('/blog/');
 
   // --- Refs for closing menus ---
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -117,10 +116,10 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
     <>
       {/* --- Logo (Top Left) --- */}
       {pathname !== "/dashboard" && (
-        <div className="fixed top-6 left-6 z-50 animate-fade-in">
+        <div className="fixed top-6 left-6 z-30 animate-fade-in">
           <Link
             to="/"
-            className={`opacity-95 flex items-center justify-center w-[100px] h-[120px] max-w-[450px]:w-[90px] max-w-[450px]:h-[90px] sm:w-[150px] sm:h-[180px] md:w-[180px] md:h-[220px] lg:w-[200px] lg:h-[250px] bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-0 max-w-[450px]:p-0 sm:p-0 md:p-0 lg:p-0 rounded-xl shadow-lg text-xs max-w-[450px]:text-xs sm:text-lg md:text-lg lg:text-xl font-extrabold transition-all duration-300 transform hover:scale-105 text-center leading-none ${
+            className={`opacity-95 flex items-center justify-center w-[100px] h-[120px] max-w-[450px]:w-[90px] max-w-[450px]:h-[90px] sm:w-[150px] sm:h-[180px] md:w-[180px] md:h-[220px] lg:w-[170px] lg:h-[220px] bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-0 max-w-[450px]:p-0 sm:p-0 md:p-0 lg:p-0 rounded-xl shadow-lg text-xs max-w-[450px]:text-xs sm:text-lg md:text-lg lg:text-xl font-extrabold transition-all duration-300 transform hover:scale-105 text-center leading-none ${
               pathname !== "/" || isLogoShrunk
                 ? "scale-50 origin-top-left"
                 : "scale-100"
@@ -136,7 +135,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
       )}
 
       {/* --- Menu Island / Controls (Top Right) --- */}
-      <div className="fixed top-6 right-6 z-50 flex items-center space-x-4 animate-fade-in">
+      <div className="fixed top-6 right-6 z-30 flex items-center space-x-4 animate-fade-in">
         {/* --- Desktop Links & Auth (Hidden below lg) --- */}
         <div
           className={`hidden lg:flex ${
@@ -292,7 +291,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
           </div>
         )}
         {isLoading && (
-          <div className="w-12 h-12 bg-gray-200 rounded-full animate-pulse border-2 border-gray-300"></div>
+          <div className="w-12 h-12 bg-gray-800 rounded-full animate-pulse border-2 border-gray-300"></div>
         )}
 
         {/* --- Donate Button (Always Visible) --- */}
@@ -317,23 +316,35 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
               isFixedNavbarRoute || isScrolled
                 ? "bg-white/80 backdrop-blur-md hover:bg-gray-100"
                 : "bg-transparent hover:bg-white/20"
-            } shadow-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 transition-all duration-300`}
+            }  focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 transition-all duration-300`}
             aria-label="Toggle main menu"
             aria-expanded={isMobileMenuOpen}
           >
-            {isMobileMenuOpen ? (
-              <XMarkIcon
-                className={`h-8 w-8 ${
-                  isFixedNavbarRoute || isScrolled ? "text-gray-800" : "text-white icon-outline"
+            <div className="relative w-8 h-8 flex flex-col justify-center items-center space-y-1.5">
+              <span
+                className={`block w-8 h-1 rounded-full transition-all duration-300 ease-in-out ${
+                  isFixedNavbarRoute || isScrolled ? "bg-gray-800" : "bg-white icon-outline"
+                } ${
+                  isMobileMenuOpen
+                    ? "absolute top-1/2 transform rotate-45"
+                    : "transform translate-y-0"
                 }`}
-              />
-            ) : (
-              <Bars3Icon
-                className={`h-8 w-8 ${
-                  isFixedNavbarRoute || isScrolled ? "text-gray-800" : "text-white icon-outline"
+              ></span>
+              <span
+                className={`block w-8 h-1 rounded-full transition-all duration-300 ease-in-out ${
+                  isFixedNavbarRoute || isScrolled ? "bg-gray-800" : "bg-white icon-outline"
+                } ${isMobileMenuOpen ? "opacity-0" : "opacity-100"}`}
+              ></span>
+              <span
+                className={`block w-8 h-1 rounded-full transition-all duration-300 ease-in-out ${
+                  isFixedNavbarRoute || isScrolled ? "bg-gray-800" : "bg-white icon-outline"
+                } ${
+                  isMobileMenuOpen
+                    ? "absolute top-1/2 transform -rotate-45"
+                    : "transform translate-y-0"
                 }`}
-              />
-            )}
+              ></span>
+            </div>
           </button>
           {isMobileMenuOpen && (
             <div
@@ -342,7 +353,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
                 isFixedNavbarRoute || isScrolled
                   ? "bg-white/95 backdrop-blur-md"
                   : "bg-white/80 backdrop-blur-md"
-              } rounded-xl shadow-xl py-3 z-50 ring-1 ring-black/5 border border-gray-100 animate-slide-in`}
+                } rounded-xl shadow-xl py-3 z-50 ring-1 ring-black/5 border border-gray-100 animate-slide-in`}
             >
               <div className="flex flex-col px-3 py-2">
                 <Link
