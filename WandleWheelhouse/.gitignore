@@ -1,57 +1,56 @@
-# Created by https://www.toptal.com/developers/gitignore/api/react,visualstudiocode
-# Edit at https://www.toptal.com/developers/gitignore?templates=react,visualstudiocode
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
 
-### react ###
-.DS_*
-*.log
-logs
-**/*.backup.*
-**/*.back.*
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
 
-node_modules
-bower_components
+# EF Core migrations history
+**/Migrations/*
 
-*.sublime*
-.env.*
-/client/.env.*
-psd
-thumb
-sketch
+# Rider specific files
+.idea/
+*.iml
+*.[Cc]ache
 
-### VisualStudioCode ###
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
+# VS Code specific files
+.vscode/
 
-# Local History for Visual Studio Code
-.history/
+# Secrets files - IMPORTANT!
+**/secrets.json
+appsettings.*.json
+!appsettings.json
 
-# Built Visual Studio Code Extensions
-*.vsix
+# SQLite database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 
-### VisualStudioCode Patch ###
-# Ignore all local history of files
-.history
-.ionide
+# Environment files
+.env
 
-# End of https://www.toptal.com/developers/gitignore/api/react,visualstudiocode
-.tmp.driveupload/*
+# Packages
+**/packages/*
+**/node_modules/*
+**/Pods/*
 
+# Local publish directory
+**/publish/*
+uploads/
+log/
 
-# .dockerignore
-
-# ... other ignores (like backend bin/obj) ...
-
-# Client specific ignores
-client/node_modules
-client/dist
-client/.env
-client/.env.*
-client/npm-debug.log*
-client/yarn-debug.log*
-client/yarn-error.log*
-
-# ... other ignores ... 

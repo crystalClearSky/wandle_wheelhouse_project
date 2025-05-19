@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-
 @plugin "@tailwindcss/typography";
 /*@plugin "tailwindcss/forms"; */
 
@@ -76,6 +75,16 @@ body {
 .editor-code {
   @apply font-mono bg-gray-800 text-white block p-4 rounded overflow-x-auto text-sm my-4;
 }
+
+a:disabled,
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  @apply cursor-not-allowed;
+}
+
+ a, button, [role="button"] {
+    @apply cursor-pointer;
+  }
 
 /* .text-outline {
   

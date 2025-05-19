@@ -1,15 +1,45 @@
 import React, { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Footer from "./Footer";
 import Navbar from "./Navbar";
-import BlogService from "../services/BlogService";
+import DonationModal from "../modals/DonationModal";
+import LoginModal from "../modals/LoginModal";
+import RegisterModal from "../modals/RegisterModal";
+import ForgotPasswordModal from "../modals/ForgotPasswordModal";
+import { useAuth } from "../contexts/AuthContext";
 import ConsentBanner from './ui/ConsentBanner';
+import BlogService from "../services/BlogService";
 
 const Layout: React.FC = () => {
+  const {
+    isDonationModalOpen,
+    closeDonationModal,
+    activeAuthModal,
+    openAuthModal,
+    closeAuthModal,
+    loginEmail,
+  } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const switchToRegister = () => {
+    openAuthModal('register');
+  };
+
+  const switchToLogin = () => {
+    openAuthModal('login');
+  };
+
+  const isShiftedRoute = [
+    "/profile",
+    "/dashboard",
+    "/contact",
+    "/reset-password",
+  ].includes(location.pathname) || location.pathname.startsWith('/blog/');
+
   const { pathname } = useLocation();
   const [hasBlogArticles, setHasBlogArticles] = useState<boolean | null>(null);
 
-  // Fetch whether blog articles exist when on /blog
   useEffect(() => {
     if (pathname === "/blog") {
       const checkArticles = async () => {
@@ -27,29 +57,50 @@ const Layout: React.FC = () => {
     }
   }, [pathname]);
 
-  // Apply shift for routes where navbar is fixed
-  const isShiftedRoute = [
-    "/profile",
-    "/dashboard",
-    "/contact"
-  ].includes(pathname) || pathname.startsWith('/blog/');
+  // Trigger LoginModal based on navigation state
+  useEffect(() => {
+    if (location.pathname === '/' && location.state?.openLoginModal) {
+      openAuthModal('login');
+      // Clear state to prevent re-triggering on refresh
+      navigate('/', { replace: true, state: {} });
+    }
+  }, [location, openAuthModal, navigate]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Navbar with fixed positioning */}
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
       <Navbar hasBlogArticles={hasBlogArticles} />
-
-      {/* Main content area */}
-      <main className="grow pt-0 md:pt-0">
+      <main className="flex-grow">
         <div
           className={`pt-0 sm:pt-0 md:pt-0 lg:pt-0 ${
-            isShiftedRoute ? "mt-[10vh]" : ""
+            isShiftedRoute ? "mt-[calc(var(--navbar-height,0px)+1rem)] sm:mt-[calc(var(--navbar-height,0px)+1.5rem)]" : ""
           }`}
+          style={{ '--navbar-height': '4rem' } as React.CSSProperties}
         >
           <Outlet />
         </div>
       </main>
       <Footer />
+
+      <LoginModal
+        isOpen={activeAuthModal === 'login'}
+        onRequestClose={closeAuthModal}
+        onSwitchToRegister={switchToRegister}
+        initialEmail={loginEmail}
+      />
+      <RegisterModal
+        isOpen={activeAuthModal === 'register'}
+        onRequestClose={closeAuthModal}
+        onSwitchToLogin={switchToLogin}
+      />
+      <ForgotPasswordModal
+        isOpen={activeAuthModal === 'forgotPassword'}
+        onRequestClose={closeAuthModal}
+        onSwitchToLogin={switchToLogin}
+      />
+      <DonationModal
+        isOpen={isDonationModalOpen}
+        onRequestClose={closeDonationModal}
+      />
       <ConsentBanner />
     </div>
   );

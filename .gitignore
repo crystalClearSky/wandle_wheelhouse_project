@@ -32,8 +32,8 @@ bld/
 
 # Secrets files - IMPORTANT!
 **/secrets.json
-appsettings.*.json # Generally exclude environment-specific settings if they contain secrets
-!appsettings.json # Keep the base template
+appsettings.*.json
+!appsettings.json
 
 # SQLite database files
 *.db
@@ -53,3 +53,4 @@ appsettings.*.json # Generally exclude environment-specific settings if they con
 **/publish/*
 uploads/
 log/
+

@@ -26,7 +26,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
   const [isScrolled, setIsScrolled] = useState(false);
 
   // --- Check if navbar should have solid background ---
-  const isFixedNavbarRoute = ["/profile", "/dashboard", "/contact"].includes(pathname) ||
+  const isFixedNavbarRoute = ["/profile", "/dashboard", "/contact", "/reset-password"].includes(pathname) ||
     (pathname === "/blog" && hasBlogArticles === false) || pathname.startsWith('/blog/');
 
   // --- Refs for closing menus ---
@@ -316,7 +316,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
               isFixedNavbarRoute || isScrolled
                 ? "bg-white/80 backdrop-blur-md hover:bg-gray-100"
                 : "bg-transparent hover:bg-white/20"
-            }  focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 transition-all duration-300`}
+            } focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 transition-all duration-300`}
             aria-label="Toggle main menu"
             aria-expanded={isMobileMenuOpen}
           >
