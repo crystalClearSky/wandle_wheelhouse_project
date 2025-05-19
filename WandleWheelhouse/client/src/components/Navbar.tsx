@@ -26,8 +26,8 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
   const [isScrolled, setIsScrolled] = useState(false);
 
   // --- Check if navbar should have solid background ---
-  const isFixedNavbarRoute = ["/profile", "/dashboard", "/contact", "/reset-password"].includes(pathname) ||
-    (pathname === "/blog" && hasBlogArticles === false) || pathname.startsWith('/blog/');
+  const isFixedNavbarRoute = ["/profile", "/dashboard", "/contact", "/reset-password", "/admin/blog/create", "/subscription"].includes(pathname) ||
+    (pathname === "/blog" && hasBlogArticles === false) || pathname.startsWith('/blog/') || pathname.startsWith('/admin/blog/edit/');
 
   // --- Refs for closing menus ---
   const userDropdownRef = useRef<HTMLDivElement>(null);

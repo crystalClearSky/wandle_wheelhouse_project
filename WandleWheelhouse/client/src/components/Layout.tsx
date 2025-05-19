@@ -34,8 +34,10 @@ const Layout: React.FC = () => {
     "/profile",
     "/dashboard",
     "/contact",
+    "/subscription",
     "/reset-password",
-  ].includes(location.pathname) || location.pathname.startsWith('/blog/');
+    "/admin/blog/create",
+  ].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/admin/blog/edit/');
 
   const { pathname } = useLocation();
   const [hasBlogArticles, setHasBlogArticles] = useState<boolean | null>(null);
@@ -72,7 +74,7 @@ const Layout: React.FC = () => {
       <main className="flex-grow">
         <div
           className={`pt-0 sm:pt-0 md:pt-0 lg:pt-0 ${
-            isShiftedRoute ? "mt-[calc(var(--navbar-height,0px)+1rem)] sm:mt-[calc(var(--navbar-height,0px)+1.5rem)]" : ""
+            isShiftedRoute ? "mt-[calc(var(--navbar-height,0px)+1rem)] sm:mt-[calc(var(--navbar-height,0px)+2rem)]" : ""
           }`}
           style={{ '--navbar-height': '4rem' } as React.CSSProperties}
         >
