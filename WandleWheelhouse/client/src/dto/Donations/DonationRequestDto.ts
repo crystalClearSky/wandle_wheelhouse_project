@@ -1,12 +1,22 @@
-import { PaymentMethod } from './PaymentMethodEnum';
+import { PaymentMethod } from "./PaymentMethodEnum";
 
-// Matches backend DTO for making a donation
 export interface DonationRequestDto {
-  amount: number; // Use number for frontend state
+  amount: number;
   method: PaymentMethod;
+  currency?: string | null; // Keep this from previous updates
 
-  // Optional fields for anonymous donations
   donorFirstName?: string | null;
   donorLastName?: string | null;
   donorEmail?: string | null;
+
+  // Billing Address Fields (optional)
+  billingAddressLine1?: string | null;
+  billingAddressLine2?: string | null;
+  billingCity?: string | null;
+  billingStateOrCounty?: string | null;
+  billingPostCode?: string | null;
+  billingCountry?: string | null; // Should be 2-letter ISO code for Stripe
+
+  isRecurring: boolean;
+  subscriptionId?: string | null;
 }

@@ -1,7 +1,5 @@
+// Location: src/WandleWheelhouse.Api/Models/Donation.cs
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -12,7 +10,8 @@ namespace WandleWheelhouse.Api.Models;
 public enum PaymentMethod
 {
     Worldpay,
-    PayPal
+    PayPal,
+    Stripe // Your existing enum with Stripe
 }
 
 public enum PaymentStatus
@@ -20,7 +19,7 @@ public enum PaymentStatus
     Pending,
     Success,
     Failed,
-    Refunded
+    Refunded // Your existing enum
 }
 
 public class Donation
@@ -32,6 +31,13 @@ public class Donation
     [Column(TypeName = "decimal(18, 2)")]
     public decimal Amount { get; set; }
 
+    /// <summary>
+    /// The currency code for the Amount (e.g., "gbp", "usd").
+    /// </summary>
+    [Required]
+    [MaxLength(3)]
+    public string Currency { get; set; } = "gbp"; // Default to GBP, ensure it's set
+
     [Required]
     public PaymentMethod Method { get; set; }
 
@@ -41,30 +47,39 @@ public class Donation
     [Required]
     public DateTime DonationDate { get; set; } = DateTime.UtcNow;
 
-    // Foreign Key to User (if donation is made by a logged-in user)
     public string? UserId { get; set; }
     public virtual User? User { get; set; }
 
-    // Information for anonymous donations (if User is null)
     public string? DonorFirstName { get; set; }
     public string? DonorLastName { get; set; }
-    public string? DonorEmail { get; set; } // Important for receipts
+    public string? DonorEmail { get; set; }
 
-    // Payment Provider specific details (store transaction IDs, etc.)
-    public string? TransactionId { get; set; } // ID from Worldpay/PayPal
-    public string? PaymentIntentId { get; set; } // E.g., Stripe's Payment Intent ID
+    public string? TransactionId { get; set; }
+    public string? PaymentIntentId { get; set; } // Stripe's Payment Intent ID
+
+    [NotMapped]
+    public string? StripeClientSecret { get; set; } // For client-side, not saved to DB
+
+    public string? StripeActualPaymentStatus { get; set; } // Raw status from Stripe
+
+    // Billing Address Fields (nullable)
+    public string? BillingAddressLine1 { get; set; }
+    public string? BillingAddressLine2 { get; set; }
+    public string? BillingCity { get; set; }
+    public string? BillingStateOrCounty { get; set; } // Or just "State" or "County"
+    public string? BillingPostCode { get; set; }
+    public string? BillingCountry { get; set; } // Typically a 2-letter ISO code, e.g., "GB", "US"
 
     [Required]
-    public bool IsRecurring { get; set; } = false; // Default to false
+    public bool IsRecurring { get; set; } = false;
 
-    public Guid? SubscriptionId { get; set; } // Nullable foreign key
+    public Guid? SubscriptionId { get; set; }
     [ForeignKey("SubscriptionId")]
-    public virtual Subscription? Subscription { get; set; } // Navigation property
+    public virtual Subscription? Subscription { get; set; }
 
-    // Audit fields
+
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
-
 }
 #nullable disable

@@ -1,5 +1,6 @@
 // Matches backend enum
 export enum PaymentMethod {
-    Worldpay = 0,
-    PayPal = 1,
+  Worldpay = "Worldpay",
+  PayPal = "PayPal",
+  Stripe = "Stripe",
   }

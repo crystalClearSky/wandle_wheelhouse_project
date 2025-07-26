@@ -1,0 +1,69 @@
+/* src/components/VerticalAppSwitcher.css */
+:root {
+  --card-width: 300px;
+  --card-height: 500px; /* Adjust as per your design needs in context */
+  --card-border-radius: 30px;
+}
+
+/* Base styling for the switcher container itself */
+.vas-switcher {
+  position: relative;
+  width: 100%;
+  height: 100%; /* This component will fill its parent in HomePage */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.vas-card-stack {
+  position: relative;
+  width: var(--card-width);
+  height: var(--card-height); /* Ensures interaction area matches visual cards */
+  transform-style: preserve-3d;
+  touch-action: none; /* Essential for pointer events to work smoothly */
+}
+
+.vas-app-card {
+  position: absolute;
+  width: var(--card-width);
+  height: var(--card-height);
+  top: 0; /* Centered by parent vas-card-stack positioning logic */
+  left: 0;
+  border-radius: var(--card-border-radius);
+  background: white;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  will-change: transform, opacity;
+  cursor: grab;
+  display: flex;
+  flex-direction: column;
+}
+
+.vas-app-card img {
+  width: 100%;
+  height: 70%; /* Proportion of card taken by image */
+  object-fit: cover;
+  pointer-events: none; /* Prevent image from interfering with drag */
+}
+
+.vas-app-title {
+  text-align: center;
+  padding: 20px;
+  font-size: 20px;
+  font-weight: bold;
+  background: #f2f2f2;
+  color: #333;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vas-app-card.exiting {
+  /* Important to ensure this overrides inline styles during animation */
+  transform: translateY(-150%) scale(0.8) !important;
+  opacity: 0 !important;
+}

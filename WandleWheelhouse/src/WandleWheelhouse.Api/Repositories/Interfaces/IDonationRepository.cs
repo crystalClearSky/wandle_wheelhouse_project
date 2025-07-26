@@ -10,4 +10,5 @@ public interface IDonationRepository : IGenericRepository<Donation>
 {
     // Example specific method:
     Task<IEnumerable<Donation>> GetSuccessfulDonationsByUserAsync(string userId);
+    Task<Donation?> GetByPaymentIntentIdAsync(string paymentIntentId);
 }

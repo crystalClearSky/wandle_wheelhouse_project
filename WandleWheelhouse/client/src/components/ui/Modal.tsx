@@ -44,7 +44,7 @@ const Modal: React.FC<ModalProps> = ({
         beforeClose: 'opacity-0 transition-opacity duration-100 ease-out',
       }}
       className={{
-        base: 'relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto p-6 outline-none opacity-0 scale-95 translate-y-4 transition-all duration-150 ease-out',
+        base: 'relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto p-0 outline-none opacity-0 scale-95 translate-y-4 transition-all duration-150 ease-out',
         afterOpen: 'opacity-100 scale-100 translate-y-0',
         beforeClose: 'opacity-0 scale-95 translate-y-4 transition-all duration-100 ease-out',
       }}

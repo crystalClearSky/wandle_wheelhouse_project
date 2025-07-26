@@ -224,7 +224,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
         {/* --- User Avatar & Dropdown (Visible when logged in, all sizes) --- */}
         {!isLoading && isAuthenticated && user && (
           <div className="relative" ref={userDropdownRef}>
-            <button
+            <Button
               onClick={toggleUserDropdown}
               className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400 rounded-full border-2 border-indigo-300 shadow-lg hover:shadow-xl transition-all duration-300 w-12 h-12 flex items-center justify-center"
               aria-haspopup="true"
@@ -237,7 +237,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
                 size="lg"
                 className="cursor-pointer w-full h-full object-cover rounded-full"
               />
-            </button>
+            </Button>
             {isUserDropdownOpen && (
               <div
                 className={`absolute right-0 mt-3 w-56 ${
@@ -309,7 +309,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
 
         {/* --- Hamburger Button & Mobile Menu Panel (Visible below lg) --- */}
         <div className="relative flex lg:hidden">
-          <button
+          <Button
             ref={hamburgerRef}
             onClick={toggleMobileMenu}
             className={`p-3 rounded-xl ${
@@ -345,7 +345,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasBlogArticles }) => {
                 }`}
               ></span>
             </div>
-          </button>
+          </Button>
           {isMobileMenuOpen && (
             <div
               ref={mobileMenuRef}

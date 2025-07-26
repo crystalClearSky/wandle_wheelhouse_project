@@ -20,5 +20,11 @@ public class DonationRepository : GenericRepository<Donation>, IDonationReposito
             .OrderByDescending(d => d.DonationDate)
             .ToListAsync();
     }
+    // Add using Microsoft.EntityFrameworkCore; if not present
+public async Task<Donation?> GetByPaymentIntentIdAsync(string paymentIntentId)
+{
+    return await _context.Donations
+                         .FirstOrDefaultAsync(d => d.PaymentIntentId == paymentIntentId);
+}
     // Implement other specific methods
 }

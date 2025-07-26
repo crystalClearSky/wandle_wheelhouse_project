@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WandleWheelhouse.Api.Models;
 
 namespace WandleWheelhouse.Api.Data;
@@ -30,7 +31,14 @@ public class ApplicationDbContext : IdentityDbContext<User>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // **IMPORTANT**: Call base first for Identity models
+         // Configure Enums to be stored as strings in the Donation table
+            builder.Entity<Donation>()
+                .Property(d => d.Method)
+                .HasConversion(new EnumToStringConverter<PaymentMethod>()); // Converts PaymentMethod enum to string
 
+            builder.Entity<Donation>()
+                .Property(d => d.Status)
+                .HasConversion(new EnumToStringConverter<PaymentStatus>()); // Converts PaymentStatus enum to string
         // Configure unique index for Newsletter email to prevent duplicates
         builder.Entity<NewsletterSubscription>()
             .HasIndex(ns => ns.Email)

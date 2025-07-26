@@ -44,17 +44,19 @@ namespace WandleWheelhouse.Api.Controllers
         public async Task<IActionResult> Subscribe([FromBody] NewsletterSubscriptionRequestDto requestDto)
         {
             // --- Your existing Subscribe logic (looks okay assuming DoesEmailExistAsync exists) ---
-             _logger.LogInformation("Newsletter subscription request for Email: {Email}", requestDto.Email);
-             var normalizedEmail = requestDto.Email.Trim().ToLowerInvariant();
-             // Ensure DoesEmailExistAsync is implemented in your repo or use AnyAsync here
-             bool exists = await _unitOfWork.NewsletterSubscriptions.DoesEmailExistAsync(normalizedEmail);
-             if (exists) { return Conflict(new { message = "This email address is already subscribed." }); }
-             string? userId = User.Identity?.IsAuthenticated ?? false ? User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
-             var newSubscription = new NewsletterSubscription { /* ... populate ... */ };
-             try {
-                 await _unitOfWork.NewsletterSubscriptions.AddAsync(newSubscription); await _unitOfWork.CompleteAsync();
-                 return NoContent();
-             } catch (Exception ex) { /* ... error handling ... */ return StatusCode(500); }
+            _logger.LogInformation("Newsletter subscription request for Email: {Email}", requestDto.Email);
+            var normalizedEmail = requestDto.Email.Trim().ToLowerInvariant();
+            // Ensure DoesEmailExistAsync is implemented in your repo or use AnyAsync here
+            bool exists = await _unitOfWork.NewsletterSubscriptions.DoesEmailExistAsync(normalizedEmail);
+            if (exists) { return Conflict(new { message = "This email address is already subscribed." }); }
+            string? userId = User.Identity?.IsAuthenticated ?? false ? User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
+            var newSubscription = new NewsletterSubscription { /* ... populate ... */ };
+            try
+            {
+                await _unitOfWork.NewsletterSubscriptions.AddAsync(newSubscription); await _unitOfWork.CompleteAsync();
+                return NoContent();
+            }
+            catch (Exception ex) { /* ... error handling ... */ return StatusCode(500); }
         }
 
 
@@ -121,7 +123,7 @@ namespace WandleWheelhouse.Api.Controllers
             };
         }
 
-         // Example DoesEmailExistAsync implementation (if not in repo)
+        // Example DoesEmailExistAsync implementation (if not in repo)
         // private async Task<bool> DoesEmailExistAsync(string normalizedEmail)
         // {
         //     return await _unitOfWork.Context.NewsletterSubscriptions.AnyAsync(ns => ns.Email.ToLower() == normalizedEmail);

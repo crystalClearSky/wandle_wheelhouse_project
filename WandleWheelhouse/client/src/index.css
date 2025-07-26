@@ -82,12 +82,19 @@ button:disabled,
   @apply cursor-not-allowed;
 }
 
- a, button, [role="button"] {
-    @apply cursor-pointer;
-  }
+a,
+button,
+[role="button"] {
+  @apply cursor-pointer;
+}
 
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 0px rgba(59, 130, 246, 0.5); /* Adds a custom focus ring */
+}
 /* .text-outline {
   
   text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.5);
 } */
 /* --- End Lexical Editor Theme Styles --- */
+
